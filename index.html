@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>שיעורי בית — נגזרות ופונקציות</title>
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- MathJax CDN -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']],
+        macros: {
+          heb: ['\\unicode{x200F}\\text{#1}', 1]
+        }
+      },
+      options: {
+        renderActions: {
+          addMenu: [0, '', '']
+        }
+      },
+      startup: {
+        pageReady: () => {
+          return MathJax.startup.defaultPageReady();
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" crossorigin="anonymous" async
+    onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js';s.crossOrigin='anonymous';s.async=true;document.head.appendChild(s);"></script>
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <div class="header">
+    <h1>📐 שיעורי בית מסכמים — נגזרות ופונקציות</h1>
+    <p>נגזרת מורכבת · נגזרת מכפלה · הוצאת גורם משותף מקסימלי</p>
+  </div>
+
+  <!-- ===== Student Name ===== -->
+  <div class="student-section">
+    <label for="student-name">👤 שם התלמיד/ה:</label>
+    <input type="text" id="student-name" placeholder="הזינו את שמכם המלא" autocomplete="name">
+    <span class="error-msg" id="name-error"></span>
+  </div>
+
+  <!-- ===== Main Container ===== -->
+  <div class="container">
+
+    <!-- ===== חלק א: נגזרת פונקציה מורכבת ===== -->
+    <div class="section-a">
+      <div class="section-header">
+        <span class="section-icon">🔗</span>
+        חלק א׳: נגזרת של פונקציה מורכבת (שאלות 1–4)
+      </div>
+      <div class="section-explanation">
+        <div class="exp-title">📖 תזכורת — נגזרת של פונקציה מורכבת (כלל השרשרת)</div>
+        <p>פונקציה מורכבת היא פונקציה "בתוך" פונקציה אחרת. נסמן את מה שבתוך הסוגריים ב-\(u\) ונקרא לו <strong>"הפנימית"</strong>.</p>
+        <ul>
+          <li><strong>פונקציה חיצונית</strong> — הפעולה שעושים על \(u\), למשל: \(u^n\)</li>
+          <li><strong>פונקציה פנימית</strong> — הביטוי שבתוך הסוגריים, למשל: \(u = 3x+2\)</li>
+        </ul>
+        <div class="exp-formula chain-rule-formula">
+          \( y' = \) 
+          <span class="formula-part">
+            <span class="formula-label">נגזרת החיצונית<br><small>(לפי \(u\))</small></span>
+          </span>
+          \( \cdot \)
+          <span class="formula-part">
+            <span class="formula-label">נגזרת הפנימית<br><small>\( u' \)</small></span>
+          </span>
+        </div>
+        <p><strong>✏️ דוגמה:</strong> &nbsp; \(y=(3x+2)^5\)</p>
+        <ul>
+          <li>החיצונית: \(u^5\) &nbsp;⟵&nbsp; נגזרת: \(5u^4\)</li>
+          <li>הפנימית: \(u=3x+2\) &nbsp;⟵&nbsp; נגזרת: \(u'=3\)</li>
+        </ul>
+        <div class="exp-formula">\( y' = 5u^4 \cdot 3 = 15(3x+2)^4 \)</div>
+      </div>
+      <div id="section-a-questions"></div>
+    </div>
+
+    <!-- ===== חלק ב: חקירת פונקציה מורכבת ===== -->
+    <div class="section-b">
+      <div class="section-header">
+        <span class="section-icon">🔍</span>
+        חלק ב׳: חקירת פונקציה מורכבת (שאלות 5א–5ג) — <strong>משקל כפול!</strong>
+      </div>
+      <div class="section-explanation section-explanation-b">
+        <div class="exp-title">📖 דוגמה — מציאת נקודות קיצון של פונקציה מורכבת</div>
+        <p><strong>נתונה:</strong> &nbsp; \(f(x)=(x^2-4)^2\). &nbsp; מצאו את נקודות הקיצון.</p>
+
+        <p><strong>שלב 1 — גזירה:</strong></p>
+        <ul>
+          <li>חיצונית: \(u^2\) &nbsp;⟵&nbsp; נגזרת: \(2u\)</li>
+          <li>פנימית: \(u=x^2-4\) &nbsp;⟵&nbsp; נגזרת: \(u'=2x\)</li>
+          <li>\(f'(x) = 2(x^2-4) \cdot 2x = 4x(x^2-4) = 4x(x-2)(x+2)\)</li>
+        </ul>
+
+        <p><strong>שלב 2 — השוואה לאפס:</strong></p>
+        <div class="exp-formula">\( f'(x) = 0 \;\Rightarrow\; 4x(x-2)(x+2) = 0 \;\Rightarrow\; x=-2,\; x=0,\; x=2 \)</div>
+
+        <p><strong>שלב 3 — טבלת סימנים:</strong></p>
+        <div class="sign-table-example">
+          <table>
+            <tr><th>\(x\)</th><td>\(x\lt -2\)</td><td>\(-2\)</td><td>\(-2\lt x\lt 0\)</td><td>\(0\)</td><td>\(0\lt x\lt 2\)</td><td>\(2\)</td><td>\(x\gt 2\)</td></tr>
+            <tr><th>\(f'(x)\)</th><td>⊖</td><td>\(0\)</td><td>⊕</td><td>\(0\)</td><td>⊖</td><td>\(0\)</td><td>⊕</td></tr>
+            <tr><th>\(f(x)\)</th><td>↘</td><td>min</td><td>↗</td><td>max</td><td>↘</td><td>min</td><td>↗</td></tr>
+          </table>
+        </div>
+
+        <p><strong>שלב 4 — ערכי הפונקציה:</strong></p>
+        <ul>
+          <li>\(f(-2) = 0\) — נקודת <strong>מינימום</strong></li>
+          <li>\(f(0) = 16\) — נקודת <strong>מקסימום</strong></li>
+          <li>\(f(2) = 0\) — נקודת <strong>מינימום</strong></li>
+        </ul>
+      </div>
+      <div id="section-b-questions"></div>
+    </div>
+
+    <!-- ===== חלק ג: נגזרת מכפלה ===== -->
+    <div class="section-c">
+      <div class="section-header">
+        <span class="section-icon">✖️</span>
+        חלק ג׳: נגזרת של מכפלת שתי פונקציות (שאלות 6–9)
+      </div>
+      <div class="section-explanation">
+        <div class="exp-title">📖 תזכורת — נגזרת של מכפלה</div>
+        <p>כשיש מכפלה של שתי פונקציות, מפרקים אותה לשני חלקים:</p>
+        <ul>
+          <li>\(f\) — הפונקציה <strong>הראשונה</strong></li>
+          <li>\(g\) — הפונקציה <strong>השנייה</strong></li>
+        </ul>
+        <div class="exp-formula">\( y = f \cdot g \quad\Rightarrow\quad y' = f' \cdot g \;+\; f \cdot g' \)</div>
+        <p><strong>✏️ דוגמה:</strong> &nbsp; \(y = x^2(x+3)\)</p>
+        <ul>
+          <li>\(f=x^2\) &nbsp;⟶&nbsp; \(f'=2x\)</li>
+          <li>\(g=x+3\) &nbsp;⟶&nbsp; \(g'=1\)</li>
+          <li>\(y' = 2x(x+3) + x^2 \cdot 1 = 3x^2+6x\)</li>
+        </ul>
+        <p>💡 <strong>שימו לב:</strong> אם אחת הפונקציות היא <em>מורכבת</em> (כמו \((x-1)^2\)), נגזור אותה לפי כלל השרשרת!</p>
+      </div>
+      <div id="section-c-questions"></div>
+    </div>
+
+    <!-- ===== חלק ד: הוצאת גורם משותף ===== -->
+    <div class="section-d">
+      <div class="section-header">
+        <span class="section-icon">🧩</span>
+        חלק ד׳: הוצאת גורם משותף מקסימלי (שאלות 10–13)
+      </div>
+      <div class="section-explanation section-explanation-d">
+        <div class="exp-title">📖 דוגמה — פתרון משוואה על ידי הוצאת גורם משותף</div>
+        <p><strong>פתרו:</strong> &nbsp; \(3(x-2)^3 - x(x-2)^2 = 0\)</p>
+
+        <p><strong>שלב 1 — זיהוי הגורם המשותף:</strong></p>
+        <ul>
+          <li>\((x-2)\) מופיע בחזקת 3 ובחזקת 2 — הגמ"ר הוא \((x-2)^2\)</li>
+        </ul>
+
+        <p><strong>שלב 2 — הוצאת גורם משותף:</strong></p>
+        <ul>
+          <li>מחלקים כל איבר ב-\((x-2)^2\):</li>
+          <li>\(3(x-2)^3 \div (x-2)^2 = 3(x-2)\)</li>
+          <li>\(x(x-2)^2 \div (x-2)^2 = x\)</li>
+        </ul>
+        <div class="exp-formula">\( (x-2)^2[3(x-2)-x] = 0 \)</div>
+
+        <p><strong>שלב 3 — פישוט:</strong></p>
+        <ul>
+          <li>\(3(x-2)-x = 3x-6-x = 2x-6\)</li>
+        </ul>
+        <div class="exp-formula">\( (x-2)^2(2x-6) = 0 \)</div>
+
+        <p><strong>שלב 4 — מציאת הפתרונות:</strong></p>
+        <ul>
+          <li>\((x-2)^2=0 \;\Rightarrow\; x=2\)</li>
+          <li>\(2x-6=0 \;\Rightarrow\; x=3\)</li>
+        </ul>
+        <div class="exp-formula">\( x=2,\quad x=3 \)</div>
+
+        <p>💡 <strong>כלל אצבע:</strong> הגורם המשותף המקסימלי הוא <em>החזקה הנמוכה</em> של כל ביטוי שמופיע בכל האיברים. <strong>אל תפתחו סוגריים!</strong></p>
+      </div>
+      <div id="section-d-questions"></div>
+    </div>
+
+    <!-- ===== חלק ה: חקירת פונקציה — מכפלה ===== -->
+    <div class="section-e">
+      <div class="section-header">
+        <span class="section-icon">📊</span>
+        חלק ה׳: חקירת פונקציה — מכפלה (שאלות 14א–14ב)
+      </div>
+      <div class="section-explanation section-explanation-e">
+        <div class="exp-title">📖 דוגמה — מציאת נקודות קיצון של פונקציית מכפלה</div>
+        <p><strong>נתונה:</strong> &nbsp; \(f(x)=(x-1)(x-4)^2\). &nbsp; מצאו את נקודות הקיצון.</p>
+
+        <p><strong>שלב 1 — גזירה (כלל המכפלה):</strong></p>
+        <ul>
+          <li>\(f = (x-1)\) &nbsp;⟶&nbsp; \(f' = 1\)</li>
+          <li>\(g = (x-4)^2\) &nbsp;⟶&nbsp; \(g' = 2(x-4)\) &nbsp; (נגזרת מורכבת!)</li>
+          <li>\(y' = 1 \cdot (x-4)^2 + (x-1) \cdot 2(x-4)\)</li>
+        </ul>
+
+        <p><strong>שלב 2 — הוצאת גורם משותף:</strong></p>
+        <ul>
+          <li>גורם משותף: \((x-4)\)</li>
+          <li>\(f'(x) = (x-4)[(x-4)+2(x-1)] = (x-4)(3x-6) = 3(x-4)(x-2)\)</li>
+        </ul>
+
+        <p><strong>שלב 3 — השוואה לאפס:</strong></p>
+        <div class="exp-formula">\( f'(x) = 0 \;\Rightarrow\; 3(x-4)(x-2) = 0 \;\Rightarrow\; x=2,\; x=4 \)</div>
+
+        <p><strong>שלב 4 — טבלת סימנים:</strong></p>
+        <div class="sign-table-example">
+          <table>
+            <tr><th>\(x\)</th><td>\(x\lt 2\)</td><td>\(2\)</td><td>\(2\lt x\lt 4\)</td><td>\(4\)</td><td>\(x\gt 4\)</td></tr>
+            <tr><th>\(f'(x)\)</th><td>⊕</td><td>\(0\)</td><td>⊖</td><td>\(0\)</td><td>⊕</td></tr>
+            <tr><th>\(f(x)\)</th><td>↗</td><td>max</td><td>↘</td><td>min</td><td>↗</td></tr>
+          </table>
+        </div>
+
+        <p><strong>שלב 5 — ערכי הפונקציה:</strong></p>
+        <ul>
+          <li>\(f(2) = (2-1)(2-4)^2 = 1 \cdot 4 = 4\) — נקודת <strong>מקסימום</strong></li>
+          <li>\(f(4) = (4-1)(4-4)^2 = 0\) — נקודת <strong>מינימום</strong></li>
+        </ul>
+      </div>
+      <div id="section-e-questions"></div>
+    </div>
+
+    <!-- ===== Submit ===== -->
+    <div class="submit-section">
+      <button class="btn-submit" id="btn-submit">📝 בדוק תשובות ושלח</button>
+      <br>
+      <button class="btn-retry" id="btn-retry">🔄 נסה/י שוב</button>
+    </div>
+
+  </div><!-- end container -->
+
+  <!-- ===== Results ===== -->
+  <div class="results-section" id="results-section">
+    <h2>📊 תוצאות</h2>
+    
+    <div class="score-circle" id="score-circle">
+      <svg viewBox="0 0 160 160">
+        <circle class="bg-circle" cx="80" cy="80" r="70"></circle>
+        <circle class="progress-circle" id="progress-circle" cx="80" cy="80" r="70"></circle>
+      </svg>
+      <span class="score-value" id="score-value">0</span>
+    </div>
+
+    <div class="score-message" id="score-message"></div>
+
+    <div class="results-details" id="results-details"></div>
+
+    <div class="sending-status" id="sending-status"></div>
+  </div>
+
+  <!-- ===== Script ===== -->
+  <script src="script.js"></script>
+
+</body>
+</html>
