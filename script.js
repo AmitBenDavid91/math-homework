@@ -1139,6 +1139,7 @@ function buildQuiz() {
 
   attachStepFeedback();
   loadFromLocalStorage();
+  updateProgress();
 
   if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
     MathJax.typesetPromise();
@@ -1189,6 +1190,7 @@ function attachStepFeedback() {
       sel.addEventListener('change', () => {
         handleStepChange(q, step, idx);
         saveToLocalStorage();
+        updateProgress();
       });
     });
   });
@@ -1206,12 +1208,16 @@ function handleStepChange(q, step, idx) {
 
   const isCorrect = val === step.correct;
 
+  // aria-live feedback region
+  const liveRegion = stepDiv.querySelector('.step-live-feedback');
+
   if (isCorrect) {
     sel.classList.add('correct-answer');
     const fb = document.createElement('span');
     fb.className = 'step-feedback step-feedback-correct';
     fb.textContent = '✓';
     stepDiv.appendChild(fb);
+    if (liveRegion) liveRegion.textContent = 'תשובה נכונה';
 
     if (idx < q.steps.length - 1) {
       const nextStep = q.steps[idx + 1];
@@ -1220,14 +1226,19 @@ function handleStepChange(q, step, idx) {
       if (nextSel) {
         nextSel.disabled = false;
         if (nextDiv) nextDiv.classList.remove('step-locked');
+        // Move focus to the newly unlocked step
+        setTimeout(() => nextSel.focus(), 150);
       }
     }
+
+    updateProgress();
   } else {
     sel.classList.add('wrong-answer');
     const fb = document.createElement('span');
     fb.className = 'step-feedback step-feedback-wrong';
     fb.textContent = '✗';
     stepDiv.appendChild(fb);
+    if (liveRegion) liveRegion.textContent = 'תשובה שגויה, נסו שוב';
 
     if (step.explanation) {
       const expDiv = document.createElement('div');
@@ -1245,6 +1256,7 @@ function handleStepChange(q, step, idx) {
       sel.value = '\u05D1\u05D7\u05E8/\u05D9...';
       const wrongFb = stepDiv.querySelector('.step-feedback-wrong');
       if (wrongFb) wrongFb.remove();
+      if (liveRegion) liveRegion.textContent = '';
     }, 2500);
   }
 }
@@ -1347,16 +1359,19 @@ function clearLocalStorage() {
 
 function buildGuidedQuestion(q) {
   let html = '';
-  q.steps.forEach((step) => {
+  const displayNum = numMap[q.id] || q.id;
+  q.steps.forEach((step, idx) => {
     const displayOptions = step.options.map(opt => latexToUnicode(opt));
+    const ariaLabel = `שאלה ${displayNum}, שלב ${idx + 1}: ${step.text.replace(/<[^>]*>/g, '').replace(/\\\([^)]*\\\)/g, 'ביטוי מתמטי')}`;
     html += `
       <div class="guided-step" id="step-${step.fieldId}">
         <span dir="rtl">${step.text}</span>
         <span class="inline-select">
-          <select id="${step.fieldId}" data-correct="${step.correct}" data-scoring="${step.scoring}">
+          <select id="${step.fieldId}" data-correct="${step.correct}" data-scoring="${step.scoring}" aria-label="${ariaLabel}">
             ${step.options.map((opt, i) => `<option value="${opt}">${displayOptions[i]}</option>`).join('')}
           </select>
         </span>
+        <span class="step-live-feedback" aria-live="polite"></span>
       </div>
     `;
   });
@@ -1384,12 +1399,13 @@ function latexToUnicode(latex) {
 }
 
 function buildRadioQuestion(q) {
+  const displayNum = numMap[q.id] || q.id;
   let html = `<p class="section-hint" dir="rtl">${q.prompt}</p>`;
-  html += `<div class="radio-group" id="radio-${q.id}">`;
+  html += `<div class="radio-group" id="radio-${q.id}" role="radiogroup" aria-label="שאלה ${displayNum}: ${q.prompt.replace(/<[^>]*>/g, '')}">`;
   q.options.forEach((opt, i) => {
     html += `
       <div class="radio-option" id="opt-${q.id}-${i}">
-        <input type="radio" name="${q.id}" id="r-${q.id}-${i}" value="${opt}" onchange="saveToLocalStorage()">
+        <input type="radio" name="${q.id}" id="r-${q.id}-${i}" value="${opt}" onchange="saveToLocalStorage(); updateProgress();">
         <label for="r-${q.id}-${i}">${opt}</label>
         <span class="correct-indicator">\u2713 \u05EA\u05E9\u05D5\u05D1\u05D4 \u05E0\u05DB\u05D5\u05E0\u05D4</span>
       </div>
@@ -1403,7 +1419,62 @@ function buildRadioQuestion(q) {
 //  Feature 4: Partial credit + check answers
 // =====================================================================
 
+// =====================================================================
+//  Progress bar + pre-submit helpers
+// =====================================================================
+
+function countAnswered() {
+  let answered = 0;
+  questions.forEach(q => {
+    if (q.type === 'guided') {
+      const finalStep = q.steps.find(s => s.scoring);
+      if (finalStep) {
+        const sel = document.getElementById(finalStep.fieldId);
+        if (sel && sel.value !== '\u05D1\u05D7\u05E8/\u05D9...' && sel.value !== '') answered++;
+      }
+    } else if (q.type === 'radio') {
+      const checked = document.querySelector(`input[name="${q.id}"]:checked`);
+      if (checked) answered++;
+    }
+  });
+  return answered;
+}
+
+function updateProgress() {
+  const bar = document.getElementById('progress-fill');
+  const label = document.getElementById('progress-label');
+  if (!bar || !label) return;
+
+  let answered = 0;
+  const total = questions.length;
+
+  questions.forEach(q => {
+    if (q.type === 'guided') {
+      const finalStep = q.steps.find(s => s.scoring);
+      if (finalStep) {
+        const sel = document.getElementById(finalStep.fieldId);
+        if (sel && sel.value !== '\u05D1\u05D7\u05E8/\u05D9...' && sel.value !== '') answered++;
+      }
+    } else if (q.type === 'radio') {
+      const checked = document.querySelector(`input[name="${q.id}"]:checked`);
+      if (checked) answered++;
+    }
+  });
+
+  const pct = Math.round((answered / total) * 100);
+  bar.style.width = pct + '%';
+  label.textContent = `${answered} / ${total} שאלות`;
+}
+
 function checkAnswers() {
+  // Confirmation dialog
+  const answered = countAnswered();
+  const total = questions.length;
+  const msg = answered < total
+    ? `ענית על ${answered} מתוך ${total} שאלות. שאלות שלא נענו ייחשבו כשגויות.\nלשלוח?`
+    : `ענית על כל ${total} השאלות. לשלוח?`;
+  if (!confirm(msg)) return;
+
   const studentName = document.getElementById('student-name').value.trim();
   if (!studentName) {
     const errMsg = document.getElementById('name-error');
@@ -1704,18 +1775,21 @@ function drawGraph(containerId, expr) {
   if (!container) return;
 
   const canvas = document.createElement('canvas');
-  canvas.width = 500;
-  canvas.height = 300;
-  canvas.style.width = '100%';
-  canvas.style.maxWidth = '500px';
-  canvas.style.height = 'auto';
+  // Dynamic sizing based on container width
+  const containerWidth = Math.min(container.clientWidth || 500, 500);
+  const ratio = 0.6; // height/width aspect ratio
+  canvas.width = containerWidth * (window.devicePixelRatio || 1);
+  canvas.height = containerWidth * ratio * (window.devicePixelRatio || 1);
+  canvas.style.width = containerWidth + 'px';
+  canvas.style.height = (containerWidth * ratio) + 'px';
   canvas.style.display = 'block';
   canvas.style.margin = '0 auto';
   container.appendChild(canvas);
 
   const ctx = canvas.getContext('2d');
-  const W = canvas.width;
-  const H = canvas.height;
+  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const W = containerWidth;
+  const H = containerWidth * ratio;
 
   const fn = (x) => {
     try {
