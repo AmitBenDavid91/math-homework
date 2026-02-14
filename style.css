@@ -132,6 +132,62 @@ body {
   display: none;
 }
 
+/* ===== Google Apps Script Config ===== */
+.gas-config-section {
+  max-width: 700px;
+  margin: -0.5rem auto 1.2rem;
+  padding: 1rem 1.2rem;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.gas-config-section label {
+  grid-column: 1 / -1;
+  font-weight: 700;
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
+.gas-config-section input {
+  min-height: 42px;
+  padding: 0.55rem 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 0.95rem;
+}
+
+.gas-config-section input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.gas-config-section button {
+  min-height: 42px;
+  padding: 0.55rem 0.9rem;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Heebo', sans-serif;
+  font-weight: 700;
+}
+
+.config-status {
+  grid-column: 1 / -1;
+  font-size: 0.86rem;
+}
+
+.config-status.success { color: var(--success); }
+.config-status.error { color: var(--error); }
+
 /* ===== Main Container ===== */
 .container {
   max-width: 800px;
@@ -1322,6 +1378,16 @@ button:focus-visible {
     margin: -1rem 0.5rem 1rem;
     padding: 1rem;
   }
+
+  .gas-config-section {
+    margin: -0.3rem 0.5rem 1rem;
+    grid-template-columns: 1fr;
+    padding: 0.9rem;
+  }
+
+  .gas-config-section button {
+    width: 100%;
+  }
   
   .container { padding: 0 0.5rem 2rem; }
   
@@ -1390,7 +1456,7 @@ button:focus-visible {
 
 /* ===== Print styles ===== */
 @media print {
-  .btn-submit, .btn-retry, .student-section { display: none; }
+  .btn-submit, .btn-retry, .student-section, .gas-config-section { display: none; }
   .question-card { break-inside: avoid; }
 }
 

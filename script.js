@@ -3,7 +3,38 @@
 //  script.js — גרסה משופרת עם משוב מיידי, רמזים, ניקוד חלקי ועוד
 // =====================================================================
 
-const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+const DEFAULT_GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+function getGoogleScriptUrl() {
+  try {
+    const saved = localStorage.getItem('google_script_url');
+    return (saved && saved.trim()) || DEFAULT_GOOGLE_SCRIPT_URL;
+  } catch (e) {
+    return DEFAULT_GOOGLE_SCRIPT_URL;
+  }
+}
+
+function saveGoogleScriptUrl() {
+  const input = document.getElementById('google-script-url');
+  const status = document.getElementById('google-script-status');
+  if (!input || !status) return;
+
+  const url = input.value.trim();
+  if (!url) {
+    status.textContent = '⚠️ הדביקו URL תקין של Web App.';
+    status.className = 'config-status error';
+    return;
+  }
+
+  try {
+    localStorage.setItem('google_script_url', url);
+    status.textContent = '✅ נשמר בהצלחה בדפדפן הזה.';
+    status.className = 'config-status success';
+  } catch (e) {
+    status.textContent = '❌ לא ניתן לשמור בדפדפן. נסו שוב.';
+    status.className = 'config-status error';
+  }
+}
 
 // =====================================================================
 //  פונקציות עזר
@@ -1871,14 +1902,16 @@ async function sendToGoogleSheets(studentName, score, wrongQuestions, wrongDetai
   statusDiv.innerHTML = '<span class="spinner"></span> \u05E9\u05D5\u05DC\u05D7 \u05EA\u05D5\u05E6\u05D0\u05D5\u05EA...';
   statusDiv.className = 'sending-status';
 
-  if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+  const googleScriptUrl = getGoogleScriptUrl();
+
+  if (googleScriptUrl === DEFAULT_GOOGLE_SCRIPT_URL) {
     statusDiv.textContent = '\u26A0\uFE0F \u05DC\u05D0 \u05D4\u05D5\u05D2\u05D3\u05E8 URL \u05E9\u05DC Google Apps Script. \u05D4\u05EA\u05D5\u05E6\u05D0\u05D5\u05EA \u05DC\u05D0 \u05E0\u05E9\u05DC\u05D7\u05D5.';
     statusDiv.className = 'sending-status error';
     return;
   }
 
   try {
-    await fetch(GOOGLE_SCRIPT_URL, {
+    await fetch(googleScriptUrl, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
@@ -1909,6 +1942,24 @@ function retryQuiz() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const googleScriptInput = document.getElementById('google-script-url');
+  const googleScriptSaveBtn = document.getElementById('btn-save-google-script');
+  if (googleScriptInput) {
+    const currentUrl = getGoogleScriptUrl();
+    googleScriptInput.value = currentUrl === DEFAULT_GOOGLE_SCRIPT_URL ? '' : currentUrl;
+  }
+  if (googleScriptSaveBtn) {
+    googleScriptSaveBtn.addEventListener('click', saveGoogleScriptUrl);
+  }
+  if (googleScriptInput) {
+    googleScriptInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveGoogleScriptUrl();
+      }
+    });
+  }
+
   buildQuiz();
   document.getElementById('btn-submit').addEventListener('click', checkAnswers);
   document.getElementById('btn-retry').addEventListener('click', retryQuiz);
