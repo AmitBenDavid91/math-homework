@@ -1073,6 +1073,14 @@ const numMap = {
   'q14a': '14\u05D0', 'q14b': '14\u05D1'
 };
 
+const questionOrder = [
+  'q1', 'q2', 'q3', 'q4',
+  'q5a', 'q5b', 'q5c',
+  'q6', 'q7', 'q8', 'q9',
+  'q10', 'q11', 'q12', 'q13',
+  'q14a', 'q14b'
+];
+
 const sectionLabels = {
   a: { name: 'נגזרת מורכבת', icon: '🔗' },
   b: { name: 'חקירת פונקציה מורכבת', icon: '🔍' },
@@ -1489,6 +1497,7 @@ function checkAnswers() {
   let maxScore = 0;
   const wrongQuestions = [];
   const wrongDetails = [];
+  const questionStatusById = {};
   const sectionScores = {};
 
   Object.keys(sectionLabels).forEach(s => {
@@ -1586,6 +1595,8 @@ function checkAnswers() {
     sectionScores[q.section].max += questionMax;
     sectionScores[q.section].total++;
     if (questionEarned === questionMax) sectionScores[q.section].correct++;
+
+    questionStatusById[q.id] = questionEarned === questionMax ? 'נכון' : 'אין מענה נכון';
   });
 
   const score = Math.round((totalScore / maxScore) * 100);
@@ -1594,7 +1605,7 @@ function checkAnswers() {
   document.getElementById('btn-retry').style.display = 'inline-block';
 
   showResults(score, wrongQuestions, wrongDetails, sectionScores);
-  sendToGoogleSheets(studentName, score, wrongQuestions, wrongDetails);
+  sendToGoogleSheets(studentName, score, wrongQuestions, wrongDetails, questionStatusById);
   document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
 
   if (score >= 90) launchConfetti();
@@ -1866,7 +1877,7 @@ function drawGraph(containerId, expr) {
 //  Google Sheets
 // =====================================================================
 
-async function sendToGoogleSheets(studentName, score, wrongQuestions, wrongDetails) {
+async function sendToGoogleSheets(studentName, score, wrongQuestions, wrongDetails, questionStatusById) {
   const statusDiv = document.getElementById('sending-status');
   statusDiv.innerHTML = '<span class="spinner"></span> \u05E9\u05D5\u05DC\u05D7 \u05EA\u05D5\u05E6\u05D0\u05D5\u05EA...';
   statusDiv.className = 'sending-status';
@@ -1885,7 +1896,15 @@ async function sendToGoogleSheets(studentName, score, wrongQuestions, wrongDetai
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentName, score, totalQuestions: questions.length, wrongQuestions, wrongDetails })
+      body: JSON.stringify({
+        studentName,
+        score,
+        totalQuestions: questions.length,
+        wrongQuestions,
+        wrongDetails,
+        questionOrder,
+        questionStatusById
+      })
     });
     statusDiv.textContent = '\u2705 \u05D4\u05EA\u05D5\u05E6\u05D0\u05D5\u05EA \u05E0\u05E9\u05DC\u05D7\u05D5 \u05D1\u05D4\u05E6\u05DC\u05D7\u05D4!';
     statusDiv.className = 'sending-status success';
