@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>שיעורי בית — דמיון משולשים</title>
+  <link rel="stylesheet" href="similarity-homework.css">
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      },
+      options: {
+        renderActions: { addMenu: [0, '', ''] }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" crossorigin="anonymous" async></script>
+</head>
+<body>
+  <div class="header">
+    <h1>📐 שיעורי בית — דמיון משולשים</h1>
+    <p>יחס • משפט זווית-זווית • שימוש בפרופורציות</p>
+  </div>
+
+  <div class="student-section">
+    <label for="student-name">👤 שם התלמיד/ה:</label>
+    <input type="text" id="student-name" placeholder="הזינו את שמכם המלא" autocomplete="name">
+    <span class="error-msg" id="name-error"></span>
+  </div>
+
+  <div class="container">
+    <section class="card theory-card">
+      <h2>תזכורת קצרה: דמיון משולשים</h2>
+      <ul>
+        <li>אם שתי זוויות שוות בהתאמה — המשולשים דומים (ז.ז).</li>
+        <li>במשולשים דומים: יחס צלעות מתאימות קבוע.</li>
+        <li>יחס היקפים = יחס דמיון.</li>
+        <li>יחס שטחים = ריבוע יחס הדמיון.</li>
+      </ul>
+      <div class="formula-box">\(\frac{AB}{DE}=\frac{BC}{EF}=\frac{AC}{DF}=k\)</div>
+      <div class="formula-box">\(\frac{S_{\triangle ABC}}{S_{\triangle DEF}}=k^2\)</div>
+    </section>
+
+    <section class="card example-card">
+      <h3>דוגמה 1 — זווית זווית</h3>
+      <p>נתון: \(\angle A = \angle D\), \(\angle B = \angle E\). הוכיחו ש-\(\triangle ABC \sim \triangle DEF\).</p>
+      <p><strong>פתרון:</strong> שתי זוויות שוות בהתאמה, לכן לפי ז.ז המשולשים דומים.</p>
+    </section>
+
+    <section class="card example-card">
+      <h3>דוגמה 2 — מציאת קטע בעזרת יחס</h3>
+      <p>אם \(\triangle ABC \sim \triangle DEF\) ונתון \(\frac{AB}{DE}=\frac{3}{2}\), \(DE=10\), אז:</p>
+      <p>\(AB = \frac{3}{2}\cdot10 = 15\).</p>
+    </section>
+
+    <section class="card" id="quiz-section">
+      <h2>שאלות</h2>
+      <div id="quiz-container"></div>
+    </section>
+
+    <div class="actions">
+      <button class="btn btn-submit" id="btn-submit">📝 בדיקת תשובות</button>
+      <button class="btn btn-retry" id="btn-retry">🔄 מטלה חדשה</button>
+      <button class="btn btn-send" id="btn-send">📤 שלח תוצאות לגיליון</button>
+    </div>
+
+    <section class="card results hidden" id="results">
+      <h2>תוצאות</h2>
+      <div id="score-line" class="score-line"></div>
+      <div id="wrong-list" class="wrong-list"></div>
+    </section>
+  </div>
+
+  <script src="similarity-homework.js"></script>
+</body>
+</html>

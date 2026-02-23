@@ -14,8 +14,12 @@
 
 function doPost(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var data = JSON.parse(e.postData.contents || '{}');
+    var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    var targetSheetName = (data.sheetName || '').toString().trim();
+    var sheet = targetSheetName
+      ? (spreadsheet.getSheetByName(targetSheetName) || spreadsheet.insertSheet(targetSheetName))
+      : spreadsheet.getActiveSheet();
 
     var questionOrder = data.questionOrder || [
       'q1', 'q2', 'q3', 'q4',
@@ -36,7 +40,8 @@ function doPost(e) {
     var headers = ['שם התלמיד'];
     for (var i = 0; i < questionOrder.length; i++) {
       var id = questionOrder[i];
-      headers.push('שאלה ' + (questionLabels[id] || id));
+      var fallbackLabel = id && id.indexOf('q') === 0 ? id.slice(1) : id;
+      headers.push('שאלה ' + (questionLabels[id] || fallbackLabel));
     }
     headers.push('ציון סופי');
 
