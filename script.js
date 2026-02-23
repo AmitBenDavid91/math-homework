@@ -3,7 +3,7 @@
 //  script.js — גרסה משופרת עם משוב מיידי, רמזים, ניקוד חלקי ועוד
 // =====================================================================
 
-const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqREHsa54wb_ZYIXtZYW6rFhcyUyg80Hryl8Y1iTaPhCHoSf7RWXeaRAWE2EGM2YeEdg/exec';
 
 // =====================================================================
 //  פונקציות עזר
