@@ -1871,14 +1871,17 @@ async function sendToGoogleSheets(studentName, score, wrongQuestions, wrongDetai
   statusDiv.innerHTML = '<span class="spinner"></span> \u05E9\u05D5\u05DC\u05D7 \u05EA\u05D5\u05E6\u05D0\u05D5\u05EA...';
   statusDiv.className = 'sending-status';
 
-  if (GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+  const scriptUrl = (GOOGLE_SCRIPT_URL || '').trim();
+  const isConfigured = scriptUrl !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE' && scriptUrl.startsWith('https://script.google.com/macros/s/');
+
+  if (!isConfigured) {
     statusDiv.textContent = '\u26A0\uFE0F \u05DC\u05D0 \u05D4\u05D5\u05D2\u05D3\u05E8 URL \u05E9\u05DC Google Apps Script. \u05D4\u05EA\u05D5\u05E6\u05D0\u05D5\u05EA \u05DC\u05D0 \u05E0\u05E9\u05DC\u05D7\u05D5.';
     statusDiv.className = 'sending-status error';
     return;
   }
 
   try {
-    await fetch(GOOGLE_SCRIPT_URL, {
+    await fetch(scriptUrl, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
