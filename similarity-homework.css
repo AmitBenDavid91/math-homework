@@ -98,10 +98,10 @@ mjx-container {
   max-width: 440px;
   width: 100%;
   height: auto;
-  border: 1px solid var(--border);
+  border: 1px solid #e5e7eb;
   border-radius: 10px;
-  background: #ffffff;
-  padding: 0.5rem;
+  background: #fff;
+  padding: 0.6rem 0.8rem;
 }
 .theory-diagram {
   max-width: 400px;

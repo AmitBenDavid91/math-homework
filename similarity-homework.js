@@ -6,222 +6,246 @@ const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7piOmLUYOo6
 const SHEET_NAME = 'דמיון משולשים';
 
 /* ══════════════════════════════════════════════════════
-   SVG Diagram Functions — שרטוטי משולשים
+   SVG Diagram Functions — שרטוטי משולשים בסגנון ספר לימוד
+   Shared constants for the clean "textbook" look
    ══════════════════════════════════════════════════════ */
 
+const D = {                       // shared diagram token palette
+  lw: '1.8',                      // line-width
+  col: '#222',                    // line / label colour
+  dot: 3.2,                       // vertex-dot radius
+  font: 'Arial, Heebo, sans-serif',
+  sz: '16',                       // label font-size
+  msz: '13',                      // measurement font-size
+};
+
+function vtx(x, y, label, anchor) {
+  const a = anchor || 'middle';
+  return `<circle cx="${x}" cy="${y}" r="${D.dot}" fill="${D.col}"/>
+    <text x="${x}" y="${y}" dy="-8" font-size="${D.sz}" font-weight="bold" fill="${D.col}" text-anchor="${a}" font-family="${D.font}">${label}</text>`;
+}
+
+/* ── Q1 : Two separate similar triangles ────────────── */
 function diagramTwoTriangles() {
-  return `<svg viewBox="0 0 480 220" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- △ABC — large -->
-    <polygon points="20,190 110,30 200,190" fill="rgba(37,99,235,0.07)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- angle arcs A, B -->
-    <path d="M 36,178 A 20 20 0 0 1 28,162" fill="none" stroke="#e11d48" stroke-width="2"/>
-    <path d="M 102,50 A 17 17 0 0 1 118,50" fill="none" stroke="#e11d48" stroke-width="2"/>
-    <!-- vertex labels -->
-    <text x="8" y="208" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">A</text>
-    <text x="104" y="22" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">B</text>
-    <text x="204" y="208" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">C</text>
+  return `<svg viewBox="0 0 480 210" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
+    <!-- △ABC (large) -->
+    <polygon points="20,185 120,30 220,185" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    <!-- vertices -->
+    ${vtx(20,185,'A','end')}
+    ${vtx(120,30,'B','middle')}
+    ${vtx(220,185,'C','start')}
     <!-- side labels -->
-    <text x="48" y="116" font-size="14" fill="#1e3a5f" text-anchor="end" font-family="Heebo,sans-serif" font-weight="600">12</text>
-    <text x="172" y="116" font-size="14" fill="#1e3a5f" font-family="Heebo,sans-serif" font-weight="600">15</text>
-    <!-- ~ symbol -->
-    <text x="235" y="118" font-size="26" fill="#9ca3af" font-family="serif">~</text>
-    <!-- △DEF — small -->
-    <polygon points="270,190 340,75 410,190" fill="rgba(220,38,38,0.07)" stroke="#dc2626" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- angle arcs D, E -->
-    <path d="M 283,179 A 16 16 0 0 1 277,166" fill="none" stroke="#e11d48" stroke-width="2"/>
-    <path d="M 334,92 A 14 14 0 0 1 347,92" fill="none" stroke="#e11d48" stroke-width="2"/>
-    <!-- vertex labels -->
-    <text x="258" y="208" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">D</text>
-    <text x="334" y="67" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">E</text>
-    <text x="414" y="208" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">F</text>
-    <!-- side labels -->
-    <text x="293" y="140" font-size="14" fill="#1e3a5f" text-anchor="end" font-family="Heebo,sans-serif" font-weight="600">8</text>
-    <text x="388" y="140" font-size="15" fill="#dc2626" font-weight="bold" font-family="Heebo,sans-serif">?</text>
+    <text x="55" y="115" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">12</text>
+    <text x="185" y="115" font-size="${D.msz}" fill="${D.col}" font-family="${D.font}">15</text>
+    <!-- ~ -->
+    <text x="258" y="118" font-size="28" fill="#999" font-family="serif">~</text>
+    <!-- △DEF (small) -->
+    <polygon points="295,185 370,68 445,185" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    ${vtx(295,185,'D','end')}
+    ${vtx(370,68,'E','middle')}
+    ${vtx(445,185,'F','start')}
+    <text x="322" y="135" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">8</text>
+    <text x="420" y="135" font-size="15" fill="${D.col}" font-weight="bold" font-family="${D.font}">?</text>
   </svg>`;
 }
 
+/* ── Q2 : Parallel line inside triangle (DE ∥ BC) ──── */
 function diagramParallelLine() {
+  // A(180,18)  B(30,225)  C(330,225)
+  // D on AB at ~60%, E on AC at ~60%  →  D(90,143)  E(270,143)
   return `<svg viewBox="0 0 360 250" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- △ABC -->
-    <polygon points="180,20 30,225 330,225" fill="rgba(37,99,235,0.07)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- DE ∥ BC (dashed) -->
-    <line x1="90" y1="143" x2="270" y2="143" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="7,4"/>
-    <!-- parallel marks on DE -->
-    <line x1="176" y1="137" x2="180" y2="149" stroke="#e11d48" stroke-width="2"/>
-    <line x1="183" y1="137" x2="187" y2="149" stroke="#e11d48" stroke-width="2"/>
-    <!-- parallel marks on BC -->
-    <line x1="176" y1="219" x2="180" y2="231" stroke="#e11d48" stroke-width="2"/>
-    <line x1="183" y1="219" x2="187" y2="231" stroke="#e11d48" stroke-width="2"/>
-    <!-- labels -->
-    <text x="180" y="14" font-size="16" font-weight="bold" fill="#2563eb" text-anchor="middle" font-family="Heebo,sans-serif">A</text>
-    <text x="16" y="242" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">B</text>
-    <text x="334" y="242" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">C</text>
-    <text x="74" y="140" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">D</text>
-    <text x="276" y="140" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">E</text>
+    <!-- outer triangle -->
+    <polygon points="180,18 30,225 330,225" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    <!-- DE segment -->
+    <line x1="90" y1="143" x2="270" y2="143" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <!-- parallel tick-marks (//) on DE -->
+    <line x1="176" y1="137" x2="180" y2="149" stroke="${D.col}" stroke-width="1.6"/>
+    <line x1="183" y1="137" x2="187" y2="149" stroke="${D.col}" stroke-width="1.6"/>
+    <!-- parallel tick-marks (//) on BC -->
+    <line x1="176" y1="219" x2="180" y2="231" stroke="${D.col}" stroke-width="1.6"/>
+    <line x1="183" y1="219" x2="187" y2="231" stroke="${D.col}" stroke-width="1.6"/>
+    <!-- vertices -->
+    ${vtx(180,18,'A','middle')}
+    ${vtx(30,225,'B','end')}
+    ${vtx(330,225,'C','start')}
+    <circle cx="90" cy="143" r="${D.dot}" fill="${D.col}"/>
+    <text x="74" y="140" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">D</text>
+    <circle cx="270" cy="143" r="${D.dot}" fill="${D.col}"/>
+    <text x="282" y="140" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">E</text>
     <!-- measurements -->
-    <text x="118" y="76" font-size="13" fill="#333" text-anchor="end" font-family="Heebo,sans-serif">AD = 6</text>
-    <text x="46" y="192" font-size="13" fill="#333" text-anchor="end" font-family="Heebo,sans-serif">DB = 4</text>
-    <text x="248" y="76" font-size="13" fill="#333" font-family="Heebo,sans-serif">AE = 9</text>
-    <text x="316" y="192" font-size="14" fill="#dc2626" font-weight="bold" font-family="Heebo,sans-serif">EC = ?</text>
+    <text x="120" y="74" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">AD = 6</text>
+    <text x="48" y="192" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">DB = 4</text>
+    <text x="248" y="74" font-size="${D.msz}" fill="${D.col}" font-family="${D.font}">AE = 9</text>
+    <text x="310" y="192" font-size="${D.msz}" fill="${D.col}" font-weight="bold" font-family="${D.font}">EC = ?</text>
   </svg>`;
 }
 
+/* ── Q3 / Q15 : Right triangle + altitude to hypotenuse ── */
 function diagramRightTriangleAlt() {
-  // △ABC right angle at B, altitude BH to hypotenuse AC
-  // A(50,190) B(151,56) C(330,190) H(151,190)
-  return `<svg viewBox="0 0 400 240" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- △ABC -->
-    <polygon points="50,190 151,56 330,190" fill="rgba(37,99,235,0.07)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- altitude BH (dashed) -->
-    <line x1="151" y1="56" x2="151" y2="190" stroke="#dc2626" stroke-width="2" stroke-dasharray="6,4"/>
-    <!-- right-angle mark at H -->
-    <polyline points="151,176 165,176 165,190" fill="none" stroke="#555" stroke-width="1.5"/>
-    <!-- right-angle mark at B (approx) -->
-    <path d="M 141,68 L 149,75 L 156,67" fill="none" stroke="#555" stroke-width="1.5"/>
-    <!-- vertex labels -->
-    <text x="35" y="208" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">A</text>
-    <text x="144" y="46" font-size="16" font-weight="bold" fill="#2563eb" text-anchor="middle" font-family="Heebo,sans-serif">B</text>
-    <text x="340" y="208" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">C</text>
-    <text x="159" y="208" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">H</text>
+  // A(50,190) B(155,45) C(330,190) H(155,190)
+  return `<svg viewBox="0 0 400 230" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
+    <!-- triangle -->
+    <polygon points="50,190 155,45 330,190" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    <!-- altitude BH -->
+    <line x1="155" y1="45" x2="155" y2="190" stroke="${D.col}" stroke-width="1.4" stroke-dasharray="6,4"/>
+    <!-- right-angle at B -->
+    <polyline points="143,58 150,68 160,61" fill="none" stroke="${D.col}" stroke-width="1.3"/>
+    <!-- right-angle at H -->
+    <polyline points="155,176 169,176 169,190" fill="none" stroke="${D.col}" stroke-width="1.3"/>
+    <!-- vertices -->
+    ${vtx(50,190,'A','end')}
+    ${vtx(155,45,'B','middle')}
+    ${vtx(330,190,'C','start')}
+    <circle cx="155" cy="190" r="${D.dot}" fill="${D.col}"/>
+    <text x="163" y="208" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">H</text>
     <!-- measurements -->
-    <text x="100" y="228" font-size="14" fill="#333" text-anchor="middle" font-family="Heebo,sans-serif">AH = 9</text>
-    <text x="240" y="228" font-size="14" fill="#333" text-anchor="middle" font-family="Heebo,sans-serif">HC = 16</text>
+    <text x="102" y="220" font-size="${D.msz}" fill="${D.col}" text-anchor="middle" font-family="${D.font}">AH = 9</text>
+    <text x="242" y="220" font-size="${D.msz}" fill="${D.col}" text-anchor="middle" font-family="${D.font}">HC = 16</text>
   </svg>`;
 }
 
+/* ── Q4 : Shadow problem ──────────────────────────────── */
 function diagramShadow() {
   return `<svg viewBox="0 0 440 210" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- sun -->
-    <circle cx="16" cy="22" r="14" fill="#fbbf24" opacity="0.8"/>
-    <text x="16" y="27" font-size="14" text-anchor="middle" font-family="sans-serif">☀</text>
     <!-- ground -->
-    <line x1="10" y1="180" x2="430" y2="180" stroke="#94a3b8" stroke-width="2"/>
-    <text x="430" y="195" font-size="11" fill="#94a3b8" text-anchor="end" font-family="Heebo,sans-serif">קרקע</text>
-    <!-- person stick figure -->
-    <line x1="80" y1="180" x2="80" y2="112" stroke="#2563eb" stroke-width="3"/>
-    <circle cx="80" cy="104" r="8" fill="none" stroke="#2563eb" stroke-width="2.5"/>
-    <!-- person shadow -->
-    <line x1="80" y1="181" x2="130" y2="181" stroke="#fbbf24" stroke-width="5" opacity="0.55"/>
+    <line x1="10" y1="182" x2="430" y2="182" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <!-- person (stick) -->
+    <line x1="80" y1="182" x2="80" y2="112" stroke="${D.col}" stroke-width="2.5"/>
+    <circle cx="80" cy="106" r="7" fill="none" stroke="${D.col}" stroke-width="2"/>
+    <!-- person shadow on ground -->
+    <line x1="80" y1="184" x2="134" y2="184" stroke="${D.col}" stroke-width="3" opacity="0.35"/>
     <!-- sun ray (person) -->
-    <line x1="80" y1="96" x2="130" y2="180" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <line x1="80" y1="99" x2="134" y2="182" stroke="${D.col}" stroke-width="1.2" stroke-dasharray="5,4"/>
     <!-- building -->
-    <rect x="290" y="42" width="40" height="138" fill="rgba(37,99,235,0.1)" stroke="#2563eb" stroke-width="2.5" rx="2"/>
-    <!-- building shadow -->
-    <line x1="330" y1="181" x2="420" y2="181" stroke="#fbbf24" stroke-width="5" opacity="0.55"/>
+    <rect x="290" y="42" width="38" height="140" fill="none" stroke="${D.col}" stroke-width="${D.lw}" rx="1"/>
+    <!-- building shadow on ground -->
+    <line x1="328" y1="184" x2="420" y2="184" stroke="${D.col}" stroke-width="3" opacity="0.35"/>
     <!-- sun ray (building) -->
-    <line x1="330" y1="42" x2="420" y2="180" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
-    <!-- labels -->
-    <text x="62" y="150" font-size="12" fill="#333" text-anchor="end" font-family="Heebo,sans-serif">1.7 מ׳</text>
-    <text x="105" y="198" font-size="12" fill="#333" text-anchor="middle" font-family="Heebo,sans-serif">2 מ׳</text>
-    <text x="280" y="115" font-size="13" fill="#dc2626" font-weight="bold" text-anchor="end" font-family="Heebo,sans-serif">? מ׳</text>
-    <text x="375" y="198" font-size="12" fill="#333" text-anchor="middle" font-family="Heebo,sans-serif">12 מ׳</text>
+    <line x1="328" y1="42" x2="420" y2="182" stroke="${D.col}" stroke-width="1.2" stroke-dasharray="5,4"/>
+    <!-- height / shadow length labels -->
+    <text x="62" y="152" font-size="12" fill="${D.col}" text-anchor="end" font-family="${D.font}">1.7 מ׳</text>
+    <text x="107" y="198" font-size="12" fill="${D.col}" text-anchor="middle" font-family="${D.font}">2 מ׳</text>
+    <text x="280" y="115" font-size="14" fill="${D.col}" font-weight="bold" text-anchor="end" font-family="${D.font}">? מ׳</text>
+    <text x="374" y="198" font-size="12" fill="${D.col}" text-anchor="middle" font-family="${D.font}">12 מ׳</text>
   </svg>`;
 }
 
+/* ── Q5 : Hourglass / butterfly (like image 1) ──────── */
 function diagramHourglass() {
-  // Two crossing lines through E forming butterfly / hourglass
-  // Line 1: A(60,30) → E(160,120) → C(260,210)
-  // Line 2: B(260,30) → E(160,120) → D(60,210)
+  // Matches the reference image style exactly:
+  // Upper triangle  C──D  with P at crossing, lower triangle A──B
+  // Lines AP-C and BP-D cross at P
+  //   A(60,210) B(260,210) — bottom
+  //   C(100,20) D(220,20) — top
+  //   P(160,115) — intersection
   return `<svg viewBox="0 0 320 240" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- guide lines (light) -->
-    <line x1="60" y1="30" x2="260" y2="210" stroke="#d1d5db" stroke-width="1" stroke-dasharray="3,3"/>
-    <line x1="260" y1="30" x2="60" y2="210" stroke="#d1d5db" stroke-width="1" stroke-dasharray="3,3"/>
-    <!-- upper △AEB -->
-    <polygon points="60,30 260,30 160,120" fill="rgba(37,99,235,0.07)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- lower △CED -->
-    <polygon points="60,210 260,210 160,120" fill="rgba(220,38,38,0.07)" stroke="#dc2626" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- vertex E dot -->
-    <circle cx="160" cy="120" r="4" fill="#111"/>
-    <!-- vertex labels -->
-    <text x="48" y="25" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">A</text>
-    <text x="264" y="25" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">B</text>
-    <text x="168" y="117" font-size="16" font-weight="bold" fill="#111" font-family="Heebo,sans-serif">E</text>
-    <text x="42" y="228" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">C</text>
-    <text x="264" y="228" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">D</text>
-    <!-- measurements -->
-    <text x="94" y="72" font-size="13" fill="#333" text-anchor="end" font-family="Heebo,sans-serif">AE = 4</text>
-    <text x="228" y="72" font-size="13" fill="#333" font-family="Heebo,sans-serif">BE = 3</text>
-    <text x="94" y="178" font-size="13" fill="#333" text-anchor="end" font-family="Heebo,sans-serif">CE = 6</text>
-    <text x="228" y="178" font-size="14" fill="#dc2626" font-weight="bold" font-family="Heebo,sans-serif">DE = ?</text>
+    <!-- full crossing lines -->
+    <line x1="60" y1="210" x2="220" y2="20" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <line x1="260" y1="210" x2="100" y2="20" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <!-- bottom base AB -->
+    <line x1="60" y1="210" x2="260" y2="210" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <!-- top base CD -->
+    <line x1="100" y1="20" x2="220" y2="20" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <!-- vertices -->
+    ${vtx(60,210,'A','end')}
+    ${vtx(260,210,'B','start')}
+    ${vtx(100,20,'C','end')}
+    ${vtx(220,20,'D','start')}
+    <circle cx="160" cy="115" r="${D.dot}" fill="${D.col}"/>
+    <text x="170" y="110" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">P</text>
+    <!-- measurements along diagonals -->
+    <text x="100" y="168" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">AP = 4</text>
+    <text x="222" y="168" font-size="${D.msz}" fill="${D.col}" font-family="${D.font}">BP = 3</text>
+    <text x="122" y="62" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">CP = 6</text>
+    <text x="200" y="62" font-size="${D.msz}" fill="${D.col}" font-weight="bold" font-family="${D.font}">DP = ?</text>
   </svg>`;
 }
 
+/* ── Q6 : Midsegment (like image 2) ──────────────────── */
 function diagramMidsegment() {
+  // Matches the reference image style:
+  //   A top, B bottom-left, C bottom-right
+  //   P midpoint of AB, Q midpoint of AC
+  //   PQ ∥ BC (horizontal line)
   return `<svg viewBox="0 0 360 240" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- △ABC -->
-    <polygon points="180,20 30,210 330,210" fill="rgba(37,99,235,0.07)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- midsegment DE -->
-    <line x1="105" y1="115" x2="255" y2="115" stroke="#dc2626" stroke-width="2.5"/>
-    <!-- midpoint dots -->
-    <circle cx="105" cy="115" r="4" fill="#dc2626"/>
-    <circle cx="255" cy="115" r="4" fill="#dc2626"/>
-    <!-- tick marks AD = DB -->
-    <line x1="139" y1="60" x2="147" y2="74" stroke="#e11d48" stroke-width="2.5"/>
-    <line x1="62" y1="157" x2="70" y2="171" stroke="#e11d48" stroke-width="2.5"/>
-    <!-- tick marks AE = EC -->
-    <line x1="221" y1="60" x2="213" y2="74" stroke="#e11d48" stroke-width="2.5"/>
-    <line x1="298" y1="157" x2="290" y2="171" stroke="#e11d48" stroke-width="2.5"/>
-    <!-- labels -->
-    <text x="180" y="14" font-size="16" font-weight="bold" fill="#2563eb" text-anchor="middle" font-family="Heebo,sans-serif">A</text>
-    <text x="16" y="226" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">B</text>
-    <text x="334" y="226" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">C</text>
-    <text x="88" y="112" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">D</text>
-    <text x="262" y="112" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">E</text>
+    <!-- triangle ABC -->
+    <polygon points="180,18 30,220 330,220" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    <!-- midsegment PQ -->
+    <line x1="105" y1="119" x2="255" y2="119" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <!-- tick marks: AP = PB single -->
+    <line x1="140" y1="61" x2="147" y2="76" stroke="${D.col}" stroke-width="1.8"/>
+    <line x1="63" y1="163" x2="70" y2="178" stroke="${D.col}" stroke-width="1.8"/>
+    <!-- tick marks: AQ = QC single -->
+    <line x1="220" y1="61" x2="213" y2="76" stroke="${D.col}" stroke-width="1.8"/>
+    <line x1="297" y1="163" x2="290" y2="178" stroke="${D.col}" stroke-width="1.8"/>
+    <!-- vertices -->
+    ${vtx(180,18,'A','middle')}
+    ${vtx(30,220,'B','end')}
+    ${vtx(330,220,'C','start')}
+    <circle cx="105" cy="119" r="${D.dot}" fill="${D.col}"/>
+    <text x="88" y="116" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">P</text>
+    <circle cx="255" cy="119" r="${D.dot}" fill="${D.col}"/>
+    <text x="266" y="116" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">Q</text>
     <!-- measurements -->
-    <text x="180" y="232" font-size="14" fill="#333" text-anchor="middle" font-family="Heebo,sans-serif">BC = 18</text>
-    <text x="180" y="108" font-size="14" fill="#dc2626" font-weight="bold" text-anchor="middle" font-family="Heebo,sans-serif">DE = ?</text>
+    <text x="180" y="240" font-size="${D.msz}" fill="${D.col}" text-anchor="middle" font-family="${D.font}">BC = 18</text>
+    <text x="180" y="112" font-size="${D.msz}" fill="${D.col}" font-weight="bold" text-anchor="middle" font-family="${D.font}">PQ = ?</text>
   </svg>`;
 }
 
+/* ── Q12 : Parallel line — finding BC ─────────────────── */
 function diagramParallelCalc() {
-  // DE ∥ BC, AD=5, AB=15 → ratio 1/3
-  // A(180,20) B(40,235) C(320,235), D at 1/3, E at 1/3
+  // A(180,18) B(40,240) C(320,240), D at 1/3, E at 1/3
   return `<svg viewBox="0 0 360 260" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- △ABC -->
-    <polygon points="180,20 40,240 320,240" fill="rgba(37,99,235,0.07)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- DE ∥ BC (dashed) -->
-    <line x1="133" y1="93" x2="227" y2="93" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="7,4"/>
-    <!-- parallel marks -->
-    <line x1="176" y1="87" x2="180" y2="99" stroke="#e11d48" stroke-width="2"/>
-    <line x1="183" y1="87" x2="187" y2="99" stroke="#e11d48" stroke-width="2"/>
-    <line x1="176" y1="234" x2="180" y2="246" stroke="#e11d48" stroke-width="2"/>
-    <line x1="183" y1="234" x2="187" y2="246" stroke="#e11d48" stroke-width="2"/>
-    <!-- labels -->
-    <text x="180" y="14" font-size="16" font-weight="bold" fill="#2563eb" text-anchor="middle" font-family="Heebo,sans-serif">A</text>
-    <text x="26" y="256" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">B</text>
-    <text x="324" y="256" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">C</text>
-    <text x="117" y="90" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">D</text>
-    <text x="233" y="90" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">E</text>
+    <!-- triangle -->
+    <polygon points="180,18 40,240 320,240" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    <!-- DE segment -->
+    <line x1="133" y1="92" x2="227" y2="92" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <!-- parallel marks DE -->
+    <line x1="176" y1="86" x2="180" y2="98" stroke="${D.col}" stroke-width="1.6"/>
+    <line x1="183" y1="86" x2="187" y2="98" stroke="${D.col}" stroke-width="1.6"/>
+    <!-- parallel marks BC -->
+    <line x1="176" y1="234" x2="180" y2="246" stroke="${D.col}" stroke-width="1.6"/>
+    <line x1="183" y1="234" x2="187" y2="246" stroke="${D.col}" stroke-width="1.6"/>
+    <!-- vertices -->
+    ${vtx(180,18,'A','middle')}
+    ${vtx(40,240,'B','end')}
+    ${vtx(320,240,'C','start')}
+    <circle cx="133" cy="92" r="${D.dot}" fill="${D.col}"/>
+    <text x="117" y="89" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">D</text>
+    <circle cx="227" cy="92" r="${D.dot}" fill="${D.col}"/>
+    <text x="238" y="89" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">E</text>
     <!-- measurements -->
-    <text x="142" y="50" font-size="13" fill="#333" text-anchor="end" font-family="Heebo,sans-serif">AD = 5</text>
-    <text x="88" y="155" font-size="13" fill="#333" text-anchor="end" font-family="Heebo,sans-serif">AB = 15</text>
-    <text x="180" y="84" font-size="13" fill="#333" text-anchor="middle" font-family="Heebo,sans-serif">DE = 7</text>
-    <text x="180" y="258" font-size="14" fill="#dc2626" font-weight="bold" text-anchor="middle" font-family="Heebo,sans-serif">BC = ?</text>
+    <text x="142" y="48" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">AD = 5</text>
+    <text x="80" y="158" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">AB = 15</text>
+    <text x="180" y="83" font-size="${D.msz}" fill="${D.col}" text-anchor="middle" font-family="${D.font}">DE = 7</text>
+    <text x="180" y="258" font-size="${D.msz}" fill="${D.col}" font-weight="bold" text-anchor="middle" font-family="${D.font}">BC = ?</text>
   </svg>`;
 }
 
+/* ── Q14 : Trapezoid area problem ─────────────────────── */
 function diagramTrapezoidArea() {
-  // DE ∥ BC, AD:DB = 2:3, area △ADE = 16
-  // A(180,20) B(40,255) C(320,255), D at 2/5 from A, E at 2/5
+  // A(180,18) B(40,260) C(320,260), D/E at 2/5
   return `<svg viewBox="0 0 360 285" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- △ABC full -->
-    <polygon points="180,20 40,260 320,260" fill="rgba(37,99,235,0.05)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
-    <!-- △ADE shaded -->
-    <polygon points="180,20 124,116 236,116" fill="rgba(220,38,38,0.15)" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/>
-    <!-- DE line -->
-    <line x1="124" y1="116" x2="236" y2="116" stroke="#dc2626" stroke-width="2" stroke-dasharray="7,4"/>
-    <!-- labels -->
-    <text x="180" y="14" font-size="16" font-weight="bold" fill="#2563eb" text-anchor="middle" font-family="Heebo,sans-serif">A</text>
-    <text x="26" y="275" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">B</text>
-    <text x="324" y="275" font-size="16" font-weight="bold" fill="#2563eb" font-family="Heebo,sans-serif">C</text>
-    <text x="106" y="113" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">D</text>
-    <text x="242" y="113" font-size="16" font-weight="bold" fill="#dc2626" font-family="Heebo,sans-serif">E</text>
-    <!-- ratio labels on side AB -->
-    <text x="139" y="60" font-size="14" fill="#333" text-anchor="end" font-family="Heebo,sans-serif" font-weight="600">2</text>
-    <text x="68" y="196" font-size="14" fill="#333" text-anchor="end" font-family="Heebo,sans-serif" font-weight="600">3</text>
+    <!-- outer triangle -->
+    <polygon points="180,18 40,260 320,260" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    <!-- inner triangle ADE (light fill for area emphasis) -->
+    <polygon points="180,18 124,115 236,115" fill="rgba(0,0,0,0.04)" stroke="none"/>
+    <!-- DE segment -->
+    <line x1="124" y1="115" x2="236" y2="115" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <!-- vertices -->
+    ${vtx(180,18,'A','middle')}
+    ${vtx(40,260,'B','end')}
+    ${vtx(320,260,'C','start')}
+    <circle cx="124" cy="115" r="${D.dot}" fill="${D.col}"/>
+    <text x="108" y="112" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">D</text>
+    <circle cx="236" cy="115" r="${D.dot}" fill="${D.col}"/>
+    <text x="248" y="112" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">E</text>
+    <!-- ratio marks on AB: AD = 2 parts, DB = 3 parts -->
+    <text x="138" y="58" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">2</text>
+    <text x="68" y="196" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">3</text>
     <!-- area labels -->
-    <text x="180" y="82" font-size="15" fill="#dc2626" font-weight="bold" text-anchor="middle" font-family="Heebo,sans-serif">S = 16</text>
-    <text x="180" y="205" font-size="15" fill="#2563eb" font-weight="bold" text-anchor="middle" font-family="Heebo,sans-serif">שטח טרפז = ?</text>
+    <text x="180" y="80" font-size="14" fill="${D.col}" font-weight="bold" text-anchor="middle" font-family="${D.font}">S = 16</text>
+    <text x="180" y="206" font-size="14" fill="${D.col}" font-weight="bold" text-anchor="middle" font-family="${D.font}">שטח טרפז = ?</text>
   </svg>`;
 }
 
@@ -285,21 +309,21 @@ const baseQuestions = [
   /* ── Q5: שעון חול / פרפר — זוויות קודקודיות ── */
   {
     id: 'q5',
-    prompt: 'בשרטוט, הישרים \\(AC\\) ו-\\(BD\\) נחתכים ב-\\(E\\). \\(\\angle AEB=\\angle CED\\) (קודקודיות) ו-\\(\\angle A=\\angle C\\).<br>נתון: \\(AE=4\\), \\(CE=6\\), \\(BE=3\\). מצאו את \\(DE\\).',
+    prompt: 'בשרטוט, הישרים \\(AD\\) ו-\\(BC\\) נחתכים ב-\\(P\\). \\(\\angle APB=\\angle CPD\\) (קודקודיות) ו-\\(\\angle A=\\angle C\\).<br>נתון: \\(AP=4\\), \\(CP=6\\), \\(BP=3\\). מצאו את \\(DP\\).',
     diagram: 'hourglass',
     options: ['4.5', '5', '2', '8'],
     correct: '4.5',
-    explanation: '\\(\\triangle AEB \\sim \\triangle CED\\) (ז.ז).<br>\\(\\frac{AE}{CE}=\\frac{BE}{DE}\\) ⇒ \\(\\frac{4}{6}=\\frac{3}{DE}\\) ⇒ \\(DE=4.5\\).'
+    explanation: '\\(\\triangle APB \\sim \\triangle CPD\\) (ז.ז).<br>\\(\\frac{AP}{CP}=\\frac{BP}{DP}\\) ⇒ \\(\\frac{4}{6}=\\frac{3}{DP}\\) ⇒ \\(DP=4.5\\).'
   },
 
   /* ── Q6: קטע אמצעים ── */
   {
     id: 'q6',
-    prompt: 'בשרטוט, \\(D\\) ו-\\(E\\) אמצעי הצלעות \\(AB\\) ו-\\(AC\\) בהתאמה. נתון: \\(BC=18\\).<br>מהו אורך \\(DE\\)?',
+    prompt: 'בשרטוט, \\(P\\) ו-\\(Q\\) אמצעי הצלעות \\(AB\\) ו-\\(AC\\) בהתאמה. נתון: \\(BC=18\\).<br>מהו אורך \\(PQ\\)?',
     diagram: 'midsegment',
     options: ['9', '12', '6', '18'],
     correct: '9',
-    explanation: 'קטע אמצעים מקביל לצלע השלישית ושווה לחציה: \\(DE=\\frac{BC}{2}=\\frac{18}{2}=9\\).<br>(\\(\\triangle ADE \\sim \\triangle ABC\\) עם \\(k=\\frac{1}{2}\\)).'
+    explanation: 'קטע אמצעים מקביל לצלע השלישית ושווה לחציה: \\(PQ=\\frac{BC}{2}=\\frac{18}{2}=9\\).<br>(\\(\\triangle APQ \\sim \\triangle ABC\\) עם \\(k=\\frac{1}{2}\\)).'
   },
 
   /* ── Q7: זיהוי קריטריון דמיון ── */
