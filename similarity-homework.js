@@ -59,7 +59,7 @@ function lbl(vx, vy, n1x, n1y, n2x, n2y, txt, off) {
  *  rx,ry       = reference point to stay away from (e.g. opp.   *
  *                vertex)                                         */
 function eLbl(px, py, e1x, e1y, e2x, e2y, rx, ry, txt, off) {
-  off = off || 17;
+  off = off || 19;
   const dx = e2x - e1x, dy = e2y - e1y;
   const len = Math.hypot(dx, dy) || 1;
   let nx = -dy / len, ny = dx / len;
@@ -75,7 +75,7 @@ function eLbl(px, py, e1x, e1y, e2x, e2y, rx, ry, txt, off) {
  *  x1…y2   = segment endpoints                                 *
  *  rx,ry   = reference point to stay away from                  */
 function seg(x1, y1, x2, y2, rx, ry, txt, off, bold) {
-  off = off || 15;
+  off = off || 17;
   const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
   const dx = x2 - x1, dy = y2 - y1;
   const len = Math.hypot(dx, dy) || 1;
