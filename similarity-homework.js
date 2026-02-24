@@ -1,264 +1,411 @@
 // =============================================================
-// מטלת דמיון משולשים — גרסה מורחבת עם שרטוטים ושאלות מורכבות
+// מטלת דמיון משולשים — שרטוטים מדויקים עם חישוב גיאומטרי
 // =============================================================
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7piOmLUYOo6AwkpragXdu2eyQiXmULIF4Dn9gticn_A4EO5v07Y5onA3Padas0zCB2w/exec';
 const SHEET_NAME = 'דמיון משולשים';
 
 /* ══════════════════════════════════════════════════════
-   SVG Diagram Functions — שרטוטי משולשים בסגנון ספר לימוד
-   Shared constants for the clean "textbook" look
+   SVG Geometry Helpers — חישוב מדויק של קשתות, זוויות, תוויות
    ══════════════════════════════════════════════════════ */
 
-const D = {                       // shared diagram token palette
-  lw: '1.8',                      // line-width
-  col: '#222',                    // line / label colour
-  dot: 3.2,                       // vertex-dot radius
-  font: 'Arial, Heebo, sans-serif',
-  sz: '16',                       // label font-size
-  msz: '13',                      // measurement font-size
+const S = {                           // style tokens
+  lw  : '1.8',                        // line stroke-width
+  col : '#222',                        // primary colour
+  r   : 3.2,                          // vertex dot radius
+  f   : 'Arial, Heebo, sans-serif',   // font-family
+  fs  : '16',                         // label font-size
+  ms  : '13',                         // measurement font-size
 };
 
-function vtx(x, y, label, anchor) {
-  const a = anchor || 'middle';
-  return `<circle cx="${x}" cy="${y}" r="${D.dot}" fill="${D.col}"/>
-    <text x="${x}" y="${y}" dy="-8" font-size="${D.sz}" font-weight="bold" fill="${D.col}" text-anchor="${a}" font-family="${D.font}">${label}</text>`;
+/* round to 1 decimal */
+const R = n => Math.round(n * 10) / 10;
+
+/* ── Vertex dot ───────────────────────────────────── */
+function dot(x, y) {
+  return `<circle cx="${R(x)}" cy="${R(y)}" r="${S.r}" fill="${S.col}"/>`;
 }
 
-/* ── Q1 : Two separate similar triangles ────────────── */
+/* ── Label placed away from a reference point (centroid) ── */
+function lbl(vx, vy, cx, cy, txt, off) {
+  off = off || 18;
+  const dx = vx - cx, dy = vy - cy;
+  const len = Math.hypot(dx, dy) || 1;
+  const x = vx + dx / len * off;
+  const y = vy + dy / len * off;
+  return `<text x="${R(x)}" y="${R(y)}" font-size="${S.fs}" font-weight="bold"
+    fill="${S.col}" text-anchor="middle" dominant-baseline="middle"
+    font-family="${S.f}">${txt}</text>`;
+}
+
+/* ── Centroid of three points ─────────────────────── */
+function cen(ax,ay,bx,by,cx,cy) {
+  return [(ax+bx+cx)/3, (ay+by+cy)/3];
+}
+
+/* ── Measurement text along segment midpoint ──────── */
+function seg(x1,y1,x2,y2, txt, off, bold) {
+  off = off || 14;
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx,dy) || 1;
+  const px = -dy/len, py = dx/len;            // perpendicular
+  const x = mx + px*off, y = my + py*off;
+  const fw = bold ? ' font-weight="bold"' : '';
+  return `<text x="${R(x)}" y="${R(y)}" font-size="${S.ms}" fill="${S.col}"${fw}
+    text-anchor="middle" dominant-baseline="middle" font-family="${S.f}">${txt}</text>`;
+}
+
+/* ── Angle arc at vertex V between rays VA and VB ─── */
+function arc(vx,vy, ax,ay, bx,by, r) {
+  r = r || 18;
+  const a1 = Math.atan2(ay-vy, ax-vx);
+  const a2 = Math.atan2(by-vy, bx-vx);
+  const x1 = vx + r*Math.cos(a1), y1 = vy + r*Math.sin(a1);
+  const x2 = vx + r*Math.cos(a2), y2 = vy + r*Math.sin(a2);
+  let d = a2 - a1;
+  if (d > Math.PI)  d -= 2*Math.PI;
+  if (d < -Math.PI) d += 2*Math.PI;
+  const sweep = d > 0 ? 1 : 0;
+  const large = Math.abs(d) > Math.PI ? 1 : 0;
+  return `<path d="M ${R(x1)},${R(y1)} A ${r},${r} 0 ${large},${sweep} ${R(x2)},${R(y2)}"
+    fill="none" stroke="${S.col}" stroke-width="1.2"/>`;
+}
+
+/* ── Double arc (for second pair of equal angles) ─── */
+function arc2(vx,vy, ax,ay, bx,by, r) {
+  r = r || 18;
+  return arc(vx,vy,ax,ay,bx,by, r) + arc(vx,vy,ax,ay,bx,by, r+5);
+}
+
+/* ── Right-angle square at vertex V ──────────────── */
+function sq(vx,vy, ax,ay, bx,by, s) {
+  s = s || 12;
+  const dA = {x:ax-vx, y:ay-vy}, dB = {x:bx-vx, y:by-vy};
+  const lA = Math.hypot(dA.x,dA.y)||1, lB = Math.hypot(dB.x,dB.y)||1;
+  const uA = {x:dA.x/lA*s, y:dA.y/lA*s};
+  const uB = {x:dB.x/lB*s, y:dB.y/lB*s};
+  const p1x=vx+uA.x,     p1y=vy+uA.y;
+  const p2x=vx+uA.x+uB.x,p2y=vy+uA.y+uB.y;
+  const p3x=vx+uB.x,     p3y=vy+uB.y;
+  return `<polyline points="${R(p1x)},${R(p1y)} ${R(p2x)},${R(p2y)} ${R(p3x)},${R(p3y)}"
+    fill="none" stroke="${S.col}" stroke-width="1.2"/>`;
+}
+
+/* ── Tick marks on segment midpoint (n=count) ────── */
+function tick(x1,y1,x2,y2, n, sz) {
+  n = n||1; sz = sz||6;
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  const dx=x2-x1, dy=y2-y1;
+  const len = Math.hypot(dx,dy)||1;
+  const ux=dx/len, uy=dy/len;
+  const px=-uy, py=ux;             // perpendicular
+  let r = '';
+  for (let i=0; i<n; i++) {
+    const off = (i - (n-1)/2) * 5;
+    const cx = mx + ux*off, cy = my + uy*off;
+    r += `<line x1="${R(cx-px*sz)}" y1="${R(cy-py*sz)}"
+               x2="${R(cx+px*sz)}" y2="${R(cy+py*sz)}"
+               stroke="${S.col}" stroke-width="1.5"/>`;
+  }
+  return r;
+}
+
+/* ── Centered text helper ────────────────────────── */
+function txt(x,y, str, opts) {
+  opts = opts || {};
+  const fw = opts.bold ? ' font-weight="bold"' : '';
+  const fs = opts.size || S.ms;
+  return `<text x="${R(x)}" y="${R(y)}" font-size="${fs}" fill="${S.col}"${fw}
+    text-anchor="middle" dominant-baseline="middle" font-family="${S.f}">${str}</text>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   8 Diagram Functions — all geometry computed precisely
+   ══════════════════════════════════════════════════════ */
+
+/* ── Q1: Two similar triangles — side by side ──────── */
 function diagramTwoTriangles() {
+  // △ABC (large)
+  const A=[20,185], B=[120,30], C=[220,185];
+  const c1 = cen(...A,...B,...C);
+  // △DEF (small)
+  const D=[295,185], E=[370,68], F=[445,185];
+  const c2 = cen(...D,...E,...F);
+
   return `<svg viewBox="0 0 480 210" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- △ABC (large) -->
-    <polygon points="20,185 120,30 220,185" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
-    <!-- vertices -->
-    ${vtx(20,185,'A','end')}
-    ${vtx(120,30,'B','middle')}
-    ${vtx(220,185,'C','start')}
+    <!-- △ABC -->
+    <polygon points="${A} ${B} ${C}" fill="none" stroke="${S.col}" stroke-width="${S.lw}" stroke-linejoin="round"/>
+    ${dot(...A)}${lbl(...A,...c1,'A')}
+    ${dot(...B)}${lbl(...B,...c1,'B')}
+    ${dot(...C)}${lbl(...C,...c1,'C')}
+    <!-- ∠A = ∠D (single arc) -->
+    ${arc(...A,...B,...C)}
+    <!-- ∠B = ∠E (double arc) -->
+    ${arc2(...B,...A,...C)}
     <!-- side labels -->
-    <text x="55" y="115" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">12</text>
-    <text x="185" y="115" font-size="${D.msz}" fill="${D.col}" font-family="${D.font}">15</text>
+    ${seg(...A,...B,'12', -14)}
+    ${seg(...B,...C,'15', 14)}
     <!-- ~ -->
     <text x="258" y="118" font-size="28" fill="#999" font-family="serif">~</text>
-    <!-- △DEF (small) -->
-    <polygon points="295,185 370,68 445,185" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
-    ${vtx(295,185,'D','end')}
-    ${vtx(370,68,'E','middle')}
-    ${vtx(445,185,'F','start')}
-    <text x="322" y="135" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">8</text>
-    <text x="420" y="135" font-size="15" fill="${D.col}" font-weight="bold" font-family="${D.font}">?</text>
+    <!-- △DEF -->
+    <polygon points="${D} ${E} ${F}" fill="none" stroke="${S.col}" stroke-width="${S.lw}" stroke-linejoin="round"/>
+    ${dot(...D)}${lbl(...D,...c2,'D')}
+    ${dot(...E)}${lbl(...E,...c2,'E')}
+    ${dot(...F)}${lbl(...F,...c2,'F')}
+    <!-- ∠D = ∠A (single arc) -->
+    ${arc(...D,...E,...F)}
+    <!-- ∠E = ∠B (double arc) -->
+    ${arc2(...E,...D,...F)}
+    <!-- side labels -->
+    ${seg(...D,...E,'8', -14)}
+    ${seg(...E,...F,'?', 14, true)}
   </svg>`;
 }
 
-/* ── Q2 : Parallel line inside triangle (DE ∥ BC) ──── */
+/* ── Q2: Parallel line DE ∥ BC inside △ABC ────────── */
 function diagramParallelLine() {
-  // A(180,18)  B(30,225)  C(330,225)
-  // D on AB at ~60%, E on AC at ~60%  →  D(90,143)  E(270,143)
+  const A=[180,18], B=[30,225], C=[330,225];
+  // D on AB at 60%, E on AC at 60%
+  const t = 0.6;
+  const D=[A[0]+t*(B[0]-A[0]), A[1]+t*(B[1]-A[1])]; // (90,142.2)
+  const E=[A[0]+t*(C[0]-A[0]), A[1]+t*(C[1]-A[1])]; // (270,142.2)
+  const c1 = cen(...A,...B,...C);
+
   return `<svg viewBox="0 0 360 250" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
     <!-- outer triangle -->
-    <polygon points="180,18 30,225 330,225" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    <polygon points="${A} ${B} ${C}" fill="none" stroke="${S.col}" stroke-width="${S.lw}" stroke-linejoin="round"/>
     <!-- DE segment -->
-    <line x1="90" y1="143" x2="270" y2="143" stroke="${D.col}" stroke-width="${D.lw}"/>
-    <!-- parallel tick-marks (//) on DE -->
-    <line x1="176" y1="137" x2="180" y2="149" stroke="${D.col}" stroke-width="1.6"/>
-    <line x1="183" y1="137" x2="187" y2="149" stroke="${D.col}" stroke-width="1.6"/>
-    <!-- parallel tick-marks (//) on BC -->
-    <line x1="176" y1="219" x2="180" y2="231" stroke="${D.col}" stroke-width="1.6"/>
-    <line x1="183" y1="219" x2="187" y2="231" stroke="${D.col}" stroke-width="1.6"/>
+    <line x1="${R(D[0])}" y1="${R(D[1])}" x2="${R(E[0])}" y2="${R(E[1])}" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <!-- parallel marks on DE and BC -->
+    ${tick(...D,...E, 2, 5)}
+    ${tick(...B,...C, 2, 5)}
+    <!-- shared angle at A -->
+    ${arc(...A,...B,...C, 22)}
     <!-- vertices -->
-    ${vtx(180,18,'A','middle')}
-    ${vtx(30,225,'B','end')}
-    ${vtx(330,225,'C','start')}
-    <circle cx="90" cy="143" r="${D.dot}" fill="${D.col}"/>
-    <text x="74" y="140" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">D</text>
-    <circle cx="270" cy="143" r="${D.dot}" fill="${D.col}"/>
-    <text x="282" y="140" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">E</text>
+    ${dot(...A)}${lbl(...A,...c1,'A')}
+    ${dot(...B)}${lbl(...B,...c1,'B')}
+    ${dot(...C)}${lbl(...C,...c1,'C')}
+    ${dot(...D)}<text x="${R(D[0]-16)}" y="${R(D[1]-2)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">D</text>
+    ${dot(...E)}<text x="${R(E[0]+16)}" y="${R(E[1]-2)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">E</text>
     <!-- measurements -->
-    <text x="120" y="74" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">AD = 6</text>
-    <text x="48" y="192" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">DB = 4</text>
-    <text x="248" y="74" font-size="${D.msz}" fill="${D.col}" font-family="${D.font}">AE = 9</text>
-    <text x="310" y="192" font-size="${D.msz}" fill="${D.col}" font-weight="bold" font-family="${D.font}">EC = ?</text>
+    ${seg(...A,...D,'AD = 6', -18)}
+    ${seg(...D,...B,'DB = 4', -18)}
+    ${seg(...A,...E,'AE = 9', 18)}
+    ${seg(...E,...C,'EC = ?', 18, true)}
   </svg>`;
 }
 
-/* ── Q3 / Q15 : Right triangle + altitude to hypotenuse ── */
+/* ── Q3/Q15: Right triangle + altitude to hypotenuse ── */
 function diagramRightTriangleAlt() {
-  // A(50,190) B(155,45) C(330,190) H(155,190)
+  const A=[50,190], B=[155,45], C=[330,190], H=[155,190];
+
   return `<svg viewBox="0 0 400 230" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
     <!-- triangle -->
-    <polygon points="50,190 155,45 330,190" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
-    <!-- altitude BH -->
-    <line x1="155" y1="45" x2="155" y2="190" stroke="${D.col}" stroke-width="1.4" stroke-dasharray="6,4"/>
-    <!-- right-angle at B -->
-    <polyline points="143,58 150,68 160,61" fill="none" stroke="${D.col}" stroke-width="1.3"/>
-    <!-- right-angle at H -->
-    <polyline points="155,176 169,176 169,190" fill="none" stroke="${D.col}" stroke-width="1.3"/>
+    <polygon points="${A} ${B} ${C}" fill="none" stroke="${S.col}" stroke-width="${S.lw}" stroke-linejoin="round"/>
+    <!-- altitude BH dashed -->
+    <line x1="${B[0]}" y1="${B[1]}" x2="${H[0]}" y2="${H[1]}" stroke="${S.col}" stroke-width="1.4" stroke-dasharray="6,4"/>
+    <!-- precise right-angle at B (∠ABC = 90°) -->
+    ${sq(...B,...A,...C, 13)}
+    <!-- precise right-angle at H (∠BHA = 90°) -->
+    ${sq(...H,...B,...A, 12)}
     <!-- vertices -->
-    ${vtx(50,190,'A','end')}
-    ${vtx(155,45,'B','middle')}
-    ${vtx(330,190,'C','start')}
-    <circle cx="155" cy="190" r="${D.dot}" fill="${D.col}"/>
-    <text x="163" y="208" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">H</text>
+    ${dot(...A)}${lbl(...A, 178,140,'A', 20)}
+    ${dot(...B)}${lbl(...B, 178,140,'B', 20)}
+    ${dot(...C)}${lbl(...C, 178,140,'C', 20)}
+    ${dot(...H)}<text x="${R(H[0]+10)}" y="${R(H[1]+16)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">H</text>
     <!-- measurements -->
-    <text x="102" y="220" font-size="${D.msz}" fill="${D.col}" text-anchor="middle" font-family="${D.font}">AH = 9</text>
-    <text x="242" y="220" font-size="${D.msz}" fill="${D.col}" text-anchor="middle" font-family="${D.font}">HC = 16</text>
+    ${txt((A[0]+H[0])/2, 218, 'AH = 9')}
+    ${txt((H[0]+C[0])/2, 218, 'HC = 16')}
   </svg>`;
 }
 
-/* ── Q4 : Shadow problem ──────────────────────────────── */
+/* ── Q4: Shadow problem (practical application) ─────── */
 function diagramShadow() {
+  // Person: base (80,182), top (80,112), shadow tip (134,182)
+  // Building: base-right (328,182), top-right (328,42), shadow tip (420,182)
+  const pBase=[80,182], pTop=[80,112], pShad=[134,182];
+  const bBase=[328,182], bTop=[328,42], bShad=[420,182];
+
   return `<svg viewBox="0 0 440 210" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- ground -->
-    <line x1="10" y1="182" x2="430" y2="182" stroke="${D.col}" stroke-width="${D.lw}"/>
-    <!-- person (stick) -->
-    <line x1="80" y1="182" x2="80" y2="112" stroke="${D.col}" stroke-width="2.5"/>
-    <circle cx="80" cy="106" r="7" fill="none" stroke="${D.col}" stroke-width="2"/>
-    <!-- person shadow on ground -->
-    <line x1="80" y1="184" x2="134" y2="184" stroke="${D.col}" stroke-width="3" opacity="0.35"/>
-    <!-- sun ray (person) -->
-    <line x1="80" y1="99" x2="134" y2="182" stroke="${D.col}" stroke-width="1.2" stroke-dasharray="5,4"/>
+    <!-- ground line -->
+    <line x1="10" y1="182" x2="430" y2="182" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <!-- person -->
+    <line x1="${pBase[0]}" y1="${pBase[1]}" x2="${pTop[0]}" y2="${pTop[1]}" stroke="${S.col}" stroke-width="2.5"/>
+    <circle cx="${pTop[0]}" cy="${R(pTop[1]-6)}" r="7" fill="none" stroke="${S.col}" stroke-width="2"/>
+    <!-- person shadow -->
+    <line x1="${pBase[0]}" y1="184" x2="${pShad[0]}" y2="184" stroke="${S.col}" stroke-width="3" opacity="0.3"/>
+    <!-- sun ray -->
+    <line x1="${pTop[0]}" y1="${R(pTop[1]-13)}" x2="${pShad[0]}" y2="${pShad[1]}" stroke="${S.col}" stroke-width="1.2" stroke-dasharray="5,4"/>
+    <!-- right angle at person base -->
+    ${sq(...pBase,...pTop,...pShad, 8)}
     <!-- building -->
-    <rect x="290" y="42" width="38" height="140" fill="none" stroke="${D.col}" stroke-width="${D.lw}" rx="1"/>
-    <!-- building shadow on ground -->
-    <line x1="328" y1="184" x2="420" y2="184" stroke="${D.col}" stroke-width="3" opacity="0.35"/>
-    <!-- sun ray (building) -->
-    <line x1="328" y1="42" x2="420" y2="182" stroke="${D.col}" stroke-width="1.2" stroke-dasharray="5,4"/>
-    <!-- height / shadow length labels -->
-    <text x="62" y="152" font-size="12" fill="${D.col}" text-anchor="end" font-family="${D.font}">1.7 מ׳</text>
-    <text x="107" y="198" font-size="12" fill="${D.col}" text-anchor="middle" font-family="${D.font}">2 מ׳</text>
-    <text x="280" y="115" font-size="14" fill="${D.col}" font-weight="bold" text-anchor="end" font-family="${D.font}">? מ׳</text>
-    <text x="374" y="198" font-size="12" fill="${D.col}" text-anchor="middle" font-family="${D.font}">12 מ׳</text>
+    <rect x="290" y="${bTop[1]}" width="38" height="${bBase[1]-bTop[1]}" fill="none" stroke="${S.col}" stroke-width="${S.lw}" rx="1"/>
+    <!-- building shadow -->
+    <line x1="${bBase[0]}" y1="184" x2="${bShad[0]}" y2="184" stroke="${S.col}" stroke-width="3" opacity="0.3"/>
+    <!-- sun ray -->
+    <line x1="${bBase[0]}" y1="${bTop[1]}" x2="${bShad[0]}" y2="${bShad[1]}" stroke="${S.col}" stroke-width="1.2" stroke-dasharray="5,4"/>
+    <!-- right angle at building base -->
+    ${sq(...bBase,...bTop,...bShad, 8)}
+    <!-- labels -->
+    ${txt(60, 150, '1.7 מ׳')}
+    ${txt(107, 197, '2 מ׳')}
+    ${txt(274, 115, '? מ׳', {bold:true})}
+    ${txt(374, 197, '12 מ׳')}
   </svg>`;
 }
 
-/* ── Q5 : Hourglass / butterfly (like image 1) ──────── */
+/* ── Q5: Hourglass / butterfly ─────────────────────── */
 function diagramHourglass() {
-  // Matches the reference image style exactly:
-  // Upper triangle  C──D  with P at crossing, lower triangle A──B
-  // Lines AP-C and BP-D cross at P
-  //   A(60,210) B(260,210) — bottom
-  //   C(100,20) D(220,20) — top
-  //   P(160,115) — intersection
-  return `<svg viewBox="0 0 320 240" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- full crossing lines -->
-    <line x1="60" y1="210" x2="220" y2="20" stroke="${D.col}" stroke-width="${D.lw}"/>
-    <line x1="260" y1="210" x2="100" y2="20" stroke="${D.col}" stroke-width="${D.lw}"/>
-    <!-- bottom base AB -->
-    <line x1="60" y1="210" x2="260" y2="210" stroke="${D.col}" stroke-width="${D.lw}"/>
-    <!-- top base CD -->
-    <line x1="100" y1="20" x2="220" y2="20" stroke="${D.col}" stroke-width="${D.lw}"/>
-    <!-- vertices -->
-    ${vtx(60,210,'A','end')}
-    ${vtx(260,210,'B','start')}
-    ${vtx(100,20,'C','end')}
-    ${vtx(220,20,'D','start')}
-    <circle cx="160" cy="115" r="${D.dot}" fill="${D.col}"/>
-    <text x="170" y="110" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">P</text>
-    <!-- measurements along diagonals -->
-    <text x="100" y="168" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">AP = 4</text>
-    <text x="222" y="168" font-size="${D.msz}" fill="${D.col}" font-family="${D.font}">BP = 3</text>
-    <text x="122" y="62" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">CP = 6</text>
-    <text x="200" y="62" font-size="${D.msz}" fill="${D.col}" font-weight="bold" font-family="${D.font}">DP = ?</text>
-  </svg>`;
-}
+  // AB = wider bottom, CD = narrower top (so CP > AP matches the problem)
+  const A=[80,195], B=[240,195], C=[40,30], D=[280,30];
+  // Intersection P of lines AD and BC (computed):
+  // Line AD: (80+200t, 195-165t)  Line BC: (240-200s, 195-165s)
+  // t = s = 0.4  →  P = (160, 129)
+  const P=[160,129];
 
-/* ── Q6 : Midsegment (like image 2) ──────────────────── */
-function diagramMidsegment() {
-  // Matches the reference image style:
-  //   A top, B bottom-left, C bottom-right
-  //   P midpoint of AB, Q midpoint of AC
-  //   PQ ∥ BC (horizontal line)
-  return `<svg viewBox="0 0 360 240" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
-    <!-- triangle ABC -->
-    <polygon points="180,18 30,220 330,220" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
-    <!-- midsegment PQ -->
-    <line x1="105" y1="119" x2="255" y2="119" stroke="${D.col}" stroke-width="${D.lw}"/>
-    <!-- tick marks: AP = PB single -->
-    <line x1="140" y1="61" x2="147" y2="76" stroke="${D.col}" stroke-width="1.8"/>
-    <line x1="63" y1="163" x2="70" y2="178" stroke="${D.col}" stroke-width="1.8"/>
-    <!-- tick marks: AQ = QC single -->
-    <line x1="220" y1="61" x2="213" y2="76" stroke="${D.col}" stroke-width="1.8"/>
-    <line x1="297" y1="163" x2="290" y2="178" stroke="${D.col}" stroke-width="1.8"/>
+  const cUp  = cen(...C,...D,...P);   // upper triangle centroid
+  const cDn  = cen(...A,...B,...P);   // lower triangle centroid
+
+  return `<svg viewBox="0 0 320 225" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
+    <!-- crossing lines -->
+    <line x1="${A[0]}" y1="${A[1]}" x2="${D[0]}" y2="${D[1]}" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <line x1="${B[0]}" y1="${B[1]}" x2="${C[0]}" y2="${C[1]}" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <!-- bases AB and CD -->
+    <line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <line x1="${C[0]}" y1="${C[1]}" x2="${D[0]}" y2="${D[1]}" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <!-- angle arcs: ∠A = ∠C (single), ∠B = ∠D (double) -->
+    ${arc(...A,...B,...P, 20)}
+    ${arc(...C,...D,...P, 20)}
+    ${arc2(...B,...A,...P, 18)}
+    ${arc2(...D,...C,...P, 18)}
+    <!-- vertically opposite angles at P -->
+    ${arc(...P,...A,...B, 12)}
+    ${arc(...P,...C,...D, 12)}
     <!-- vertices -->
-    ${vtx(180,18,'A','middle')}
-    ${vtx(30,220,'B','end')}
-    ${vtx(330,220,'C','start')}
-    <circle cx="105" cy="119" r="${D.dot}" fill="${D.col}"/>
-    <text x="88" y="116" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">P</text>
-    <circle cx="255" cy="119" r="${D.dot}" fill="${D.col}"/>
-    <text x="266" y="116" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">Q</text>
+    ${dot(...A)}${lbl(...A,...cDn,'A', 20)}
+    ${dot(...B)}${lbl(...B,...cDn,'B', 20)}
+    ${dot(...C)}${lbl(...C,...cUp,'C', 20)}
+    ${dot(...D)}${lbl(...D,...cUp,'D', 20)}
+    ${dot(...P)}<text x="${R(P[0]+12)}" y="${R(P[1]-6)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">P</text>
     <!-- measurements -->
-    <text x="180" y="240" font-size="${D.msz}" fill="${D.col}" text-anchor="middle" font-family="${D.font}">BC = 18</text>
-    <text x="180" y="112" font-size="${D.msz}" fill="${D.col}" font-weight="bold" text-anchor="middle" font-family="${D.font}">PQ = ?</text>
+    ${seg(...A,...P,'AP = 4', -16)}
+    ${seg(...B,...P,'BP = 3', 16)}
+    ${seg(...C,...P,'CP = 6', 16)}
+    ${seg(...D,...P,'DP = ?', -16, true)}
   </svg>`;
 }
 
-/* ── Q12 : Parallel line — finding BC ─────────────────── */
+/* ── Q6: Midsegment PQ ∥ BC ───────────────────────── */
+function diagramMidsegment() {
+  const A=[180,18], B=[30,220], C=[330,220];
+  const P = [(A[0]+B[0])/2, (A[1]+B[1])/2];   // midpoint AB = (105,119)
+  const Q = [(A[0]+C[0])/2, (A[1]+C[1])/2];   // midpoint AC = (255,119)
+  const c1 = cen(...A,...B,...C);
+
+  return `<svg viewBox="0 0 360 245" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
+    <!-- triangle -->
+    <polygon points="${A} ${B} ${C}" fill="none" stroke="${S.col}" stroke-width="${S.lw}" stroke-linejoin="round"/>
+    <!-- midsegment PQ -->
+    <line x1="${R(P[0])}" y1="${R(P[1])}" x2="${R(Q[0])}" y2="${R(Q[1])}" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <!-- tick marks: AP = PB (1 tick each) -->
+    ${tick(...A,...P, 1, 7)}
+    ${tick(...P,...B, 1, 7)}
+    <!-- tick marks: AQ = QC (1 tick each) -->
+    ${tick(...A,...Q, 1, 7)}
+    ${tick(...Q,...C, 1, 7)}
+    <!-- parallel marks on PQ and BC -->
+    ${tick(...P,...Q, 2, 5)}
+    ${tick(...B,...C, 2, 5)}
+    <!-- vertices -->
+    ${dot(...A)}${lbl(...A,...c1,'A')}
+    ${dot(...B)}${lbl(...B,...c1,'B')}
+    ${dot(...C)}${lbl(...C,...c1,'C')}
+    ${dot(...P)}<text x="${R(P[0]-16)}" y="${R(P[1]-2)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">P</text>
+    ${dot(...Q)}<text x="${R(Q[0]+16)}" y="${R(Q[1]-2)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">Q</text>
+    <!-- measurements -->
+    ${txt((B[0]+C[0])/2, 240, 'BC = 18')}
+    ${txt((P[0]+Q[0])/2, P[1]-10, 'PQ = ?', {bold:true})}
+  </svg>`;
+}
+
+/* ── Q12: DE ∥ BC, find BC ─────────────────────────── */
 function diagramParallelCalc() {
-  // A(180,18) B(40,240) C(320,240), D at 1/3, E at 1/3
+  const A=[180,18], B=[40,240], C=[320,240];
+  // D on AB at 1/3, E on AC at 1/3
+  const t = 1/3;
+  const D=[A[0]+t*(B[0]-A[0]), A[1]+t*(B[1]-A[1])];  // ≈(133.3, 92)
+  const E=[A[0]+t*(C[0]-A[0]), A[1]+t*(C[1]-A[1])];  // ≈(226.7, 92)
+  const c1 = cen(...A,...B,...C);
+
   return `<svg viewBox="0 0 360 260" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
     <!-- triangle -->
-    <polygon points="180,18 40,240 320,240" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
+    <polygon points="${A} ${B} ${C}" fill="none" stroke="${S.col}" stroke-width="${S.lw}" stroke-linejoin="round"/>
     <!-- DE segment -->
-    <line x1="133" y1="92" x2="227" y2="92" stroke="${D.col}" stroke-width="${D.lw}"/>
-    <!-- parallel marks DE -->
-    <line x1="176" y1="86" x2="180" y2="98" stroke="${D.col}" stroke-width="1.6"/>
-    <line x1="183" y1="86" x2="187" y2="98" stroke="${D.col}" stroke-width="1.6"/>
-    <!-- parallel marks BC -->
-    <line x1="176" y1="234" x2="180" y2="246" stroke="${D.col}" stroke-width="1.6"/>
-    <line x1="183" y1="234" x2="187" y2="246" stroke="${D.col}" stroke-width="1.6"/>
+    <line x1="${R(D[0])}" y1="${R(D[1])}" x2="${R(E[0])}" y2="${R(E[1])}" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <!-- parallel marks -->
+    ${tick(...D,...E, 2, 5)}
+    ${tick(...B,...C, 2, 5)}
+    <!-- shared angle at A -->
+    ${arc(...A,...B,...C, 22)}
     <!-- vertices -->
-    ${vtx(180,18,'A','middle')}
-    ${vtx(40,240,'B','end')}
-    ${vtx(320,240,'C','start')}
-    <circle cx="133" cy="92" r="${D.dot}" fill="${D.col}"/>
-    <text x="117" y="89" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">D</text>
-    <circle cx="227" cy="92" r="${D.dot}" fill="${D.col}"/>
-    <text x="238" y="89" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">E</text>
+    ${dot(...A)}${lbl(...A,...c1,'A')}
+    ${dot(...B)}${lbl(...B,...c1,'B')}
+    ${dot(...C)}${lbl(...C,...c1,'C')}
+    ${dot(...D)}<text x="${R(D[0]-16)}" y="${R(D[1]-2)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">D</text>
+    ${dot(...E)}<text x="${R(E[0]+16)}" y="${R(E[1]-2)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">E</text>
     <!-- measurements -->
-    <text x="142" y="48" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">AD = 5</text>
-    <text x="80" y="158" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">AB = 15</text>
-    <text x="180" y="83" font-size="${D.msz}" fill="${D.col}" text-anchor="middle" font-family="${D.font}">DE = 7</text>
-    <text x="180" y="258" font-size="${D.msz}" fill="${D.col}" font-weight="bold" text-anchor="middle" font-family="${D.font}">BC = ?</text>
+    ${seg(...A,...D,'AD = 5', -18)}
+    ${seg(...A,...B,'AB = 15', -28)}
+    ${txt((D[0]+E[0])/2, D[1]-12, 'DE = 7')}
+    ${txt((B[0]+C[0])/2, 258, 'BC = ?', {bold:true})}
   </svg>`;
 }
 
-/* ── Q14 : Trapezoid area problem ─────────────────────── */
+/* ── Q14: Trapezoid area (DE ∥ BC, AD:DB = 2:3) ──── */
 function diagramTrapezoidArea() {
-  // A(180,18) B(40,260) C(320,260), D/E at 2/5
+  const A=[180,18], B=[40,260], C=[320,260];
+  // D on AB at 2/5, E on AC at 2/5
+  const t = 2/5;
+  const D=[A[0]+t*(B[0]-A[0]), A[1]+t*(B[1]-A[1])]; // (124, 114.8)
+  const E=[A[0]+t*(C[0]-A[0]), A[1]+t*(C[1]-A[1])]; // (236, 114.8)
+  const c1 = cen(...A,...B,...C);
+
   return `<svg viewBox="0 0 360 285" class="diagram-svg" xmlns="http://www.w3.org/2000/svg">
     <!-- outer triangle -->
-    <polygon points="180,18 40,260 320,260" fill="none" stroke="${D.col}" stroke-width="${D.lw}" stroke-linejoin="round"/>
-    <!-- inner triangle ADE (light fill for area emphasis) -->
-    <polygon points="180,18 124,115 236,115" fill="rgba(0,0,0,0.04)" stroke="none"/>
+    <polygon points="${A} ${B} ${C}" fill="none" stroke="${S.col}" stroke-width="${S.lw}" stroke-linejoin="round"/>
+    <!-- inner triangle ADE (subtle fill) -->
+    <polygon points="${A} ${R(D[0])},${R(D[1])} ${R(E[0])},${R(E[1])}" fill="rgba(0,0,0,0.04)" stroke="none"/>
     <!-- DE segment -->
-    <line x1="124" y1="115" x2="236" y2="115" stroke="${D.col}" stroke-width="${D.lw}"/>
+    <line x1="${R(D[0])}" y1="${R(D[1])}" x2="${R(E[0])}" y2="${R(E[1])}" stroke="${S.col}" stroke-width="${S.lw}"/>
+    <!-- parallel marks -->
+    ${tick(...D,...E, 2, 5)}
+    ${tick(...B,...C, 2, 5)}
     <!-- vertices -->
-    ${vtx(180,18,'A','middle')}
-    ${vtx(40,260,'B','end')}
-    ${vtx(320,260,'C','start')}
-    <circle cx="124" cy="115" r="${D.dot}" fill="${D.col}"/>
-    <text x="108" y="112" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">D</text>
-    <circle cx="236" cy="115" r="${D.dot}" fill="${D.col}"/>
-    <text x="248" y="112" font-size="${D.sz}" font-weight="bold" fill="${D.col}" font-family="${D.font}">E</text>
-    <!-- ratio marks on AB: AD = 2 parts, DB = 3 parts -->
-    <text x="138" y="58" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">2</text>
-    <text x="68" y="196" font-size="${D.msz}" fill="${D.col}" text-anchor="end" font-family="${D.font}">3</text>
+    ${dot(...A)}${lbl(...A,...c1,'A')}
+    ${dot(...B)}${lbl(...B,...c1,'B')}
+    ${dot(...C)}${lbl(...C,...c1,'C')}
+    ${dot(...D)}<text x="${R(D[0]-16)}" y="${R(D[1]-2)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">D</text>
+    ${dot(...E)}<text x="${R(E[0]+16)}" y="${R(E[1]-2)}" font-size="${S.fs}" font-weight="bold" fill="${S.col}" font-family="${S.f}">E</text>
+    <!-- ratio labels on AB -->
+    ${seg(...A,...D,'2', -14)}
+    ${seg(...D,...B,'3', -14)}
     <!-- area labels -->
-    <text x="180" y="80" font-size="14" fill="${D.col}" font-weight="bold" text-anchor="middle" font-family="${D.font}">S = 16</text>
-    <text x="180" y="206" font-size="14" fill="${D.col}" font-weight="bold" text-anchor="middle" font-family="${D.font}">שטח טרפז = ?</text>
+    ${txt(180, 75, 'S = 16', {bold:true})}
+    ${txt(180, 205, 'שטח טרפז = ?', {bold:true})}
   </svg>`;
 }
 
 /* map diagram keys → functions */
 const DIAGRAMS = {
-  twoTriangles: diagramTwoTriangles,
-  parallelLine: diagramParallelLine,
-  rightTriangleAlt: diagramRightTriangleAlt,
-  shadow: diagramShadow,
-  hourglass: diagramHourglass,
-  midsegment: diagramMidsegment,
-  parallelCalc: diagramParallelCalc,
-  trapezoidArea: diagramTrapezoidArea
+  twoTriangles:    diagramTwoTriangles,
+  parallelLine:    diagramParallelLine,
+  rightTriangleAlt:diagramRightTriangleAlt,
+  shadow:          diagramShadow,
+  hourglass:       diagramHourglass,
+  midsegment:      diagramMidsegment,
+  parallelCalc:    diagramParallelCalc,
+  trapezoidArea:   diagramTrapezoidArea
 };
 
 /* ══════════════════════════════════════════════════════
