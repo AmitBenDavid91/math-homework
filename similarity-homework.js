@@ -502,8 +502,11 @@ const baseQuestions = [
 
 let questions = [];
 let lastCheckData = null;
+let currentQ = 0;
+const LS_KEY = 'sim-hw-answers';
 
 const quizContainer    = document.getElementById('quiz-container');
+const questionNav      = document.getElementById('question-nav');
 const submitBtn        = document.getElementById('btn-submit');
 const retryBtn         = document.getElementById('btn-retry');
 const sendBtn          = document.getElementById('btn-send');
@@ -522,10 +525,77 @@ function shuffle(arr) {
   return copy;
 }
 
+/* ── localStorage helpers ──────────────── */
+function saveAnswers() {
+  const data = {};
+  questions.forEach(q => {
+    const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+    if (sel) data[q.id] = sel.value;
+  });
+  data._name = studentNameInput.value;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function loadAnswers() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function clearSavedAnswers() {
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+}
+
+/* ── Navigation ───────────────────────── */
+function showQuestion(idx) {
+  if (idx < 0 || idx >= questions.length) return;
+  currentQ = idx;
+  document.querySelectorAll('.question-card').forEach((c, i) => {
+    c.classList.toggle('visible', i === idx);
+  });
+  document.querySelectorAll('.nav-btn').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+  });
+  /* typeset only the visible card if MathJax is available */
+  const card = document.getElementById(`card-${questions[idx].id}`);
+  if (card && window.MathJax && typeof MathJax.typesetPromise === 'function') {
+    MathJax.typesetPromise([card]);
+  }
+}
+
+function updateNavAnswered() {
+  document.querySelectorAll('.nav-btn').forEach((btn, i) => {
+    const q = questions[i];
+    const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+    btn.classList.toggle('answered', !!sel);
+  });
+}
+
+/* ── Build quiz ───────────────────────── */
 function buildQuiz() {
+  const saved = loadAnswers();
   questions = baseQuestions.map(q => ({ ...q, options: shuffle(q.options) }));
   quizContainer.innerHTML = '';
+  questionNav.innerHTML = '';
+  currentQ = 0;
 
+  /* restore student name */
+  if (saved._name && !studentNameInput.value) {
+    studentNameInput.value = saved._name;
+  }
+
+  /* build nav buttons */
+  questions.forEach((q, idx) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'nav-btn';
+    btn.textContent = idx + 1;
+    btn.addEventListener('click', () => showQuestion(idx));
+    questionNav.appendChild(btn);
+  });
+
+  /* build question cards */
   questions.forEach((q, idx) => {
     const card = document.createElement('div');
     card.className = 'question-card';
@@ -534,9 +604,10 @@ function buildQuiz() {
     let optionsHtml = '';
     q.options.forEach((opt, optIdx) => {
       const radioId = `r-${q.id}-${optIdx}`;
+      const checked = (saved[q.id] === opt) ? ' checked' : '';
       optionsHtml += `
         <label class="option" for="${radioId}">
-          <input type="radio" id="${radioId}" name="${q.id}" value="${opt}">
+          <input type="radio" id="${radioId}" name="${q.id}" value="${opt}"${checked}>
           <span>${opt}</span>
         </label>`;
     });
@@ -553,7 +624,28 @@ function buildQuiz() {
       <div class="explanation" id="explanation-${q.id}"></div>`;
 
     quizContainer.appendChild(card);
+
+    /* auto-advance + save on radio change */
+    card.querySelectorAll('input[type="radio"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        saveAnswers();
+        updateNavAnswered();
+        /* advance to next unanswered or next question after short delay */
+        setTimeout(() => {
+          if (idx < questions.length - 1) {
+            showQuestion(idx + 1);
+          }
+        }, 350);
+      });
+    });
   });
+
+  /* also save student name on change */
+  studentNameInput.addEventListener('input', saveAnswers);
+
+  /* show first question and update nav */
+  showQuestion(0);
+  updateNavAnswered();
 
   if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
     MathJax.typesetPromise([quizContainer]);
@@ -655,6 +747,7 @@ function retryHomework() {
   scoreLine.textContent = '';
   wrongList.innerHTML   = '';
   lastCheckData = null;
+  clearSavedAnswers();
   buildQuiz();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
