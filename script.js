@@ -1052,6 +1052,8 @@ function genQ14b() {
 // =====================================================================
 
 let questions = [];
+let currentQ = 0;
+let paginationMode = true;
 
 function generateAllQuestions() {
   const q5a = genQ5a();
@@ -1176,6 +1178,149 @@ function buildQuiz() {
       observer.observe(card);
     });
   });
+
+  // --- Pagination: build nav bar, hide progress bar, show first question ---
+  buildNavBar();
+  const progressBarSection = document.getElementById('progress-bar-section');
+  if (progressBarSection) progressBarSection.style.display = 'none';
+
+  // Restore saved position or start from first unanswered
+  const savedIdx = loadSavedCurrentQ();
+  showQuestion(savedIdx >= 0 ? savedIdx : 0);
+}
+
+// =====================================================================
+//  Navigation bar + pagination
+// =====================================================================
+
+function buildNavBar() {
+  const nav = document.getElementById('question-nav');
+  if (!nav) return;
+  nav.innerHTML = '';
+  questionOrder.forEach((qId, idx) => {
+    const q = questions.find(qq => qq.id === qId);
+    const btn = document.createElement('button');
+    btn.className = `nav-btn nav-btn-${q.section}`;
+    btn.textContent = numMap[qId] || qId.replace('q', '');
+    btn.type = 'button';
+    btn.id = `nav-btn-${idx}`;
+    btn.title = `שאלה ${numMap[qId] || qId.replace('q', '')}`;
+    btn.addEventListener('click', () => showQuestion(idx));
+    nav.appendChild(btn);
+  });
+}
+
+function showQuestion(idx) {
+  if (idx < 0 || idx >= questionOrder.length) return;
+  currentQ = idx;
+  paginationMode = true;
+  const qId = questionOrder[idx];
+  const q = questions.find(qq => qq.id === qId);
+
+  // Hide all section divs
+  ['a', 'b', 'c', 'd', 'e'].forEach(s => {
+    const sec = document.querySelector(`.section-${s}`);
+    if (sec) sec.style.display = 'none';
+  });
+
+  // Show the current question's section
+  const activeSection = document.querySelector(`.section-${q.section}`);
+  if (activeSection) activeSection.style.display = '';
+
+  // Hide all cards in this section, show only the current one
+  questions.filter(qq => qq.section === q.section).forEach(qq => {
+    const card = document.getElementById(`card-${qq.id}`);
+    if (card) {
+      card.style.display = qq.id === qId ? '' : 'none';
+      if (qq.id === qId) {
+        card.classList.add('animate-in');
+        card.style.opacity = '1';
+        card.style.transform = 'none';
+      }
+    }
+  });
+
+  // Update nav buttons
+  document.querySelectorAll('.nav-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
+
+  // Hide submit section in pagination, show only on last question
+  const submitSection = document.querySelector('.submit-section');
+  if (submitSection) {
+    submitSection.style.display = (idx === questionOrder.length - 1) ? '' : 'none';
+  }
+
+  // Scroll to top of nav bar
+  const nav = document.getElementById('question-nav');
+  if (nav) {
+    nav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Re-render MathJax for the visible content
+  if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+    MathJax.typesetPromise();
+  }
+
+  saveToLocalStorage();
+  updateNavAnswered();
+}
+
+function showAllQuestions() {
+  paginationMode = false;
+  ['a', 'b', 'c', 'd', 'e'].forEach(s => {
+    const sec = document.querySelector(`.section-${s}`);
+    if (sec) sec.style.display = '';
+  });
+  questions.forEach(q => {
+    const card = document.getElementById(`card-${q.id}`);
+    if (card) {
+      card.style.display = '';
+      card.classList.add('animate-in');
+      card.style.opacity = '1';
+      card.style.transform = 'none';
+    }
+  });
+  const submitSection = document.querySelector('.submit-section');
+  if (submitSection) submitSection.style.display = '';
+  // Hide nav active state
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+}
+
+function advanceToNext() {
+  if (!paginationMode) return;
+  if (currentQ < questionOrder.length - 1) {
+    setTimeout(() => showQuestion(currentQ + 1), 700);
+  }
+}
+
+function updateNavAnswered() {
+  questionOrder.forEach((qId, idx) => {
+    const q = questions.find(qq => qq.id === qId);
+    const btn = document.getElementById(`nav-btn-${idx}`);
+    if (!btn) return;
+    let answered = false;
+    if (q.type === 'guided') {
+      const scoredStep = q.steps.find(s => s.scoring);
+      if (scoredStep) {
+        const sel = document.getElementById(scoredStep.fieldId);
+        if (sel && sel.value && sel.value !== '\u05D1\u05D7\u05E8/\u05D9...') answered = true;
+      }
+    } else if (q.type === 'radio') {
+      if (document.querySelector(`input[name="${q.id}"]:checked`)) answered = true;
+    }
+    btn.classList.toggle('answered', answered);
+  });
+}
+
+function loadSavedCurrentQ() {
+  try {
+    const raw = localStorage.getItem('homework_progress');
+    if (!raw) return -1;
+    const data = JSON.parse(raw);
+    if (typeof data.currentQ === 'number') return data.currentQ;
+    return -1;
+  } catch (e) { return -1; }
 }
 
 // =====================================================================
@@ -1237,6 +1382,10 @@ function handleStepChange(q, step, idx) {
         // Move focus to the newly unlocked step
         setTimeout(() => nextSel.focus(), 150);
       }
+    } else {
+      // Last step answered correctly — auto-advance to next question
+      updateNavAnswered();
+      advanceToNext();
     }
 
     updateProgress();
@@ -1306,6 +1455,8 @@ function saveToLocalStorage() {
         if (checked) data[`radio_${q.id}`] = checked.value;
       }
     });
+
+    data.currentQ = currentQ;
 
     localStorage.setItem('homework_progress', JSON.stringify(data));
   } catch (e) {}
@@ -1413,7 +1564,7 @@ function buildRadioQuestion(q) {
   q.options.forEach((opt, i) => {
     html += `
       <div class="radio-option" id="opt-${q.id}-${i}">
-        <input type="radio" name="${q.id}" id="r-${q.id}-${i}" value="${opt}" onchange="saveToLocalStorage(); updateProgress();">
+        <input type="radio" name="${q.id}" id="r-${q.id}-${i}" value="${opt}" onchange="saveToLocalStorage(); updateProgress(); updateNavAnswered(); advanceToNext();">
         <label for="r-${q.id}-${i}">${opt}</label>
         <span class="correct-indicator">\u2713 \u05EA\u05E9\u05D5\u05D1\u05D4 \u05E0\u05DB\u05D5\u05E0\u05D4</span>
       </div>
@@ -1472,16 +1623,25 @@ function updateProgress() {
   const pct = Math.round((answered / total) * 100);
   bar.style.width = pct + '%';
   label.textContent = `${answered} / ${total} שאלות`;
+
+  updateNavAnswered();
 }
 
 function checkAnswers() {
+  // Show all questions for review (exit pagination)
+  showAllQuestions();
+
   // Confirmation dialog
   const answered = countAnswered();
   const total = questions.length;
   const msg = answered < total
     ? `ענית על ${answered} מתוך ${total} שאלות. שאלות שלא נענו ייחשבו כשגויות.\nלשלוח?`
     : `ענית על כל ${total} השאלות. לשלוח?`;
-  if (!confirm(msg)) return;
+  if (!confirm(msg)) {
+    // User cancelled — go back to pagination
+    showQuestion(currentQ);
+    return;
+  }
 
   const studentName = document.getElementById('student-name').value.trim();
   if (!studentName) {
@@ -1489,6 +1649,7 @@ function checkAnswers() {
     errMsg.style.display = 'block';
     errMsg.textContent = '\u26A0\uFE0F \u05D9\u05E9 \u05DC\u05D4\u05D6\u05D9\u05DF \u05E9\u05DD \u05DC\u05E4\u05E0\u05D9 \u05E9\u05DC\u05D9\u05D7\u05EA \u05D4\u05EA\u05E9\u05D5\u05D1\u05D5\u05EA';
     document.getElementById('student-name').focus();
+    showQuestion(currentQ);
     return;
   }
   document.getElementById('name-error').style.display = 'none';
